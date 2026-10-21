@@ -1,15 +1,17 @@
 //! @file input.rs
 //! @brief Mouse/touch input: click a piece to select it, click a highlighted square to send a `MoveCommand`.
+//!        After the game ends, R asks for a new game.
 
 use bevy::picking::events::PointerClick;
 use bevy::picking::mesh_picking::MeshPickingPlugin;
 use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
-use chess_core::{CommandSource, Game, Move, MoveCommand, PieceKind, Square};
+use chess_core::{CommandSource, Game, GameResult, Move, MoveCommand, PieceKind, Square};
 
+use crate::animation::AnimationQueue;
 use crate::board::BoardSquare;
 use crate::pieces::PieceOnBoard;
-use crate::turn::{ActiveGame, MoveCommandSent};
+use crate::turn::{ActiveGame, GameSet, MoveCommandSent, NewGameRequested};
 
 /// @brief Turns clicks on squares and pieces into selections and move commands.
 pub struct InputPlugin;
@@ -18,7 +20,10 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MeshPickingPlugin)
             .init_resource::<Selection>()
-            .add_systems(Update, handle_clicks);
+            .add_systems(
+                Update,
+                (handle_clicks, request_new_game).in_set(GameSet::Input),
+            );
     }
 }
 
@@ -37,9 +42,15 @@ fn handle_clicks(
     squares: Query<&BoardSquare>,
     pieces: Query<&PieceOnBoard>,
     game: Res<ActiveGame>,
+    queue: Res<AnimationQueue>,
     mut selection: ResMut<Selection>,
     mut sent: MessageWriter<MoveCommandSent>,
 ) {
+    // The board is locked until the last move has finished animating.
+    if queue.is_busy() {
+        clicks.clear();
+        return;
+    }
     for click in clicks.read() {
         if click.button != PointerButton::Primary {
             continue;
@@ -55,6 +66,20 @@ fn handle_clicks(
         if let Some(cmd) = on_square_clicked(&mut selection, &game.0, square) {
             sent.write(MoveCommandSent(cmd));
         }
+    }
+}
+
+/// @brief Asks for a new game when R is pressed, once the game has ended and the board is still.
+fn request_new_game(
+    keys: Res<ButtonInput<KeyCode>>,
+    game: Res<ActiveGame>,
+    queue: Res<AnimationQueue>,
+    mut requests: MessageWriter<NewGameRequested>,
+) {
+    let finished = game.0.result() != GameResult::Ongoing && !queue.is_busy();
+    if finished && keys.just_pressed(KeyCode::KeyR) {
+        debug!("new game requested");
+        requests.write(NewGameRequested);
     }
 }
 

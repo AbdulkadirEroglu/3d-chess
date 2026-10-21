@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use chess_core::{Color as Side, Piece, PieceKind, Square};
 
 use crate::board::square_to_world;
-use crate::turn::ActiveGame;
+use crate::turn::{ActiveGame, GameSet, GameStarted};
 
 /// @brief White piece color: cream stone.
 const WHITE_PIECE_COLOR: Color = Color::srgb(0.93, 0.90, 0.82);
@@ -16,21 +16,17 @@ const WHITE_PIECE_COLOR: Color = Color::srgb(0.93, 0.90, 0.82);
 /// @brief Black piece color: dark stone.
 const BLACK_PIECE_COLOR: Color = Color::srgb(0.13, 0.12, 0.14);
 
-/// @brief Spawns the pieces once the game exists.
+/// @brief Spawns the pieces whenever a game starts.
 pub struct PiecesPlugin;
 
 impl Plugin for PiecesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_pieces);
+        app.add_systems(Update, spawn_pieces.in_set(GameSet::Animation));
     }
 }
 
 /// @brief Marks a piece entity: which piece it shows and the square it stands on.
 #[derive(Component, Debug)]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "`piece` is read by the turn flow, alpha step 5")
-)]
 pub struct PieceOnBoard {
     /// @brief Kind and color.
     pub piece: Piece,
@@ -40,7 +36,7 @@ pub struct PieceOnBoard {
 
 /// @brief Placeholder mesh for a piece kind, its height, and its rotation.
 /// @note The knight's ring is stood upright so it faces the players.
-fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
+pub fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
     match kind {
         PieceKind::Pawn => (Mesh::from(Sphere::new(0.2)), 0.4, Quat::IDENTITY),
         PieceKind::Knight => (
@@ -59,13 +55,22 @@ fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
     }
 }
 
-/// @brief Spawns one entity per piece in the active game, standing on its square.
+/// @brief When a game starts, replaces all piece entities with one per piece in the active game.
 fn spawn_pieces(
     mut commands: Commands,
+    mut started: MessageReader<GameStarted>,
+    old: Query<Entity, With<PieceOnBoard>>,
     game: Res<ActiveGame>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    if started.read().count() == 0 {
+        return;
+    }
+    for entity in &old {
+        commands.entity(entity).despawn();
+    }
+
     let stone = |color: Color| StandardMaterial {
         base_color: color,
         perceptual_roughness: 0.6,
@@ -122,5 +127,11 @@ mod tests {
                 (ground.x, ground.z)
             );
         }
+
+        // Another game start replaces the pieces instead of adding a second set.
+        app.world_mut().write_message(GameStarted);
+        app.update();
+        let mut query = app.world_mut().query::<&PieceOnBoard>();
+        assert_eq!(query.iter(app.world()).count(), 32);
     }
 }

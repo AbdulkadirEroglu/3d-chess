@@ -29,13 +29,13 @@ Goal: the core loop works end to end with placeholder art, playable solo against
 - [ ] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
 - [x] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
 - [x] Mouse input: select piece, highlight legal moves, choose target (promotions auto-queen in alpha)
-- [ ] `MoveCommand` pipeline: input → rules validation → animation queue
-- [ ] Basic move animation (piece travels to target square)
-- [ ] Basic capture effect (defender breaks / disappears)
-- [ ] Local hot-seat 2-player
+- [x] `MoveCommand` pipeline: input → rules validation → animation queue
+- [x] Basic move animation (piece travels to target square)
+- [x] Basic capture effect (defender breaks / disappears)
+- [x] Local hot-seat 2-player
 - [ ] Simple AI opponent (`chess_ai`: alpha-beta), runs off the main thread
 - [ ] Game mode select: human vs human, human vs AI, pick side
-- [ ] Game-over screen, restart
+- [x] Game-over screen, restart (R key; a proper menu comes with mode select)
 
 **Exit criteria:** a full game can be played start to finish on Linux, vs a human or the AI, with no rule bugs (perft suite passing).
 

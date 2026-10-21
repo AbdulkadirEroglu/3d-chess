@@ -95,6 +95,11 @@ impl Game {
         self.result
     }
 
+    /// @brief True if the side to move is in check.
+    pub fn in_check(&self) -> bool {
+        !self.board.checkers().is_empty()
+    }
+
     /// @brief The piece on a square, if any.
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         let square = cc::Square::index(usize::from(square.index()));

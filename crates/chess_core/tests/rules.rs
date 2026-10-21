@@ -187,7 +187,9 @@ fn bad_commands_are_rejected() {
 #[test]
 fn checkmate_ends_the_game() {
     let mut game = Game::new();
+    assert!(!game.in_check());
     play(&mut game, &["f2f3", "e7e5", "g2g4", "d8h4"]);
+    assert!(game.in_check());
     assert_eq!(
         game.result(),
         GameResult::Checkmate {
