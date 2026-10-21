@@ -226,48 +226,11 @@ fn play_animations(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
-    use bevy::time::TimeUpdateStrategy;
-    use chess_core::{CommandSource, Game, MoveCommand, Square};
+    use chess_core::Game;
 
     use super::*;
-    use crate::pieces::PiecesPlugin;
-    use crate::turn::{ActiveGame, MoveCommandSent, TurnPlugin};
-
-    /// @brief Headless app starting from `game`, stepping time 100 ms per update.
-    fn test_app(game: Game) -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .init_asset::<Mesh>()
-            .init_asset::<StandardMaterial>()
-            .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
-                100,
-            )))
-            .insert_resource(ActiveGame(game))
-            .add_plugins((TurnPlugin, PiecesPlugin, AnimationPlugin));
-        app.update();
-        app
-    }
-
-    /// @brief Sends a move like "e2e4" (or "a7a8q" to promote) and runs until its animations finish.
-    fn play(app: &mut App, mv: &str) {
-        let square = |name: &str| name.parse::<Square>().expect("valid square");
-        app.world_mut().write_message(MoveCommandSent(MoveCommand {
-            from: square(&mv[0..2]),
-            to: square(&mv[2..4]),
-            promotion: (mv.len() == 5).then_some(PieceKind::Queen),
-            source: CommandSource::Pointer,
-        }));
-        app.update();
-        for _ in 0..50 {
-            if !app.world().resource::<AnimationQueue>().is_busy() {
-                return;
-            }
-            app.update();
-        }
-        panic!("animations for {mv} never finished");
-    }
+    use crate::test_support::{headless_app, play};
+    use crate::turn::ActiveGame;
 
     /// @brief Every piece entity shows the rules' piece, rests on its square, and nothing extra is left.
     fn assert_matches_rules(app: &mut App) {
@@ -287,7 +250,7 @@ mod tests {
     /// @brief After a capture the captured entity is gone and the rest match the rules.
     #[test]
     fn capture() {
-        let mut app = test_app(Game::new());
+        let mut app = headless_app(Game::new());
         for mv in ["e2e4", "d7d5", "e4d5", "g8f6"] {
             play(&mut app, mv);
         }
@@ -299,7 +262,7 @@ mod tests {
     #[test]
     fn castling_and_en_passant() {
         let game = Game::from_fen("r3k2r/pppppppp/8/4P3/8/8/8/R3K2R b KQkq - 0 1").expect("fen");
-        let mut app = test_app(game);
+        let mut app = headless_app(game);
         for mv in ["d7d5", "e5d6", "e8c8", "e1g1"] {
             play(&mut app, mv);
         }
@@ -310,7 +273,7 @@ mod tests {
     #[test]
     fn promotion() {
         let game = Game::from_fen("8/P7/8/8/8/8/8/k6K w - - 0 1").expect("fen");
-        let mut app = test_app(game);
+        let mut app = headless_app(game);
         play(&mut app, "a7a8q");
         assert_matches_rules(&mut app);
     }

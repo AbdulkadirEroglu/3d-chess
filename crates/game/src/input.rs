@@ -1,6 +1,6 @@
 //! @file input.rs
 //! @brief Mouse/touch input: click a piece to select it, click a highlighted square to send a `MoveCommand`.
-//!        After the game ends, R asks for a new game.
+//!        Promotions open a piece picker. After the game ends, R asks for a new game.
 
 use bevy::picking::events::PointerClick;
 use bevy::picking::mesh_picking::MeshPickingPlugin;
@@ -8,12 +8,14 @@ use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
 use chess_core::{CommandSource, Game, GameResult, Move, MoveCommand, PieceKind, Square};
 
+use crate::ai::AiPlayer;
 use crate::animation::AnimationQueue;
 use crate::board::BoardSquare;
 use crate::pieces::PieceOnBoard;
 use crate::turn::{ActiveGame, GameSet, MoveCommandSent, NewGameRequested};
+use crate::ui::PromotionChoice;
 
-/// @brief Turns clicks on squares and pieces into selections and move commands.
+/// @brief Turns clicks on squares, pieces and promotion buttons into selections and move commands.
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
@@ -34,25 +36,35 @@ pub struct Selection {
     pub square: Option<Square>,
     /// @brief Legal moves of the selected piece; their targets get highlighted.
     pub moves: Vec<Move>,
+    /// @brief A pawn move waiting for the player to pick its promotion piece: (from, to).
+    pub pending_promotion: Option<(Square, Square)>,
 }
 
-/// @brief Reads left clicks on board squares and pieces and reacts to the clicked square.
+/// @brief Reads left clicks on squares, pieces and promotion buttons and reacts to them.
 fn handle_clicks(
     mut clicks: MessageReader<PointerClick>,
     squares: Query<&BoardSquare>,
     pieces: Query<&PieceOnBoard>,
+    choices: Query<&PromotionChoice>,
     game: Res<ActiveGame>,
     queue: Res<AnimationQueue>,
+    ai: Res<AiPlayer>,
     mut selection: ResMut<Selection>,
     mut sent: MessageWriter<MoveCommandSent>,
 ) {
-    // The board is locked until the last move has finished animating.
-    if queue.is_busy() {
+    // The board is locked while pieces move and while the AI has the turn.
+    if queue.is_busy() || ai.side == Some(game.0.side_to_move()) {
         clicks.clear();
         return;
     }
     for click in clicks.read() {
         if click.button != PointerButton::Primary {
+            continue;
+        }
+        if let Ok(PromotionChoice(kind)) = choices.get(click.entity) {
+            if let Some(cmd) = choose_promotion(&mut selection, *kind) {
+                sent.write(MoveCommandSent(cmd));
+            }
             continue;
         }
         // Clicking a piece counts as clicking the square it stands on.
@@ -83,20 +95,46 @@ fn request_new_game(
     }
 }
 
+/// @brief Completes a waiting promotion with the piece the player picked.
+/// @return The move command, or None if no promotion was waiting.
+fn choose_promotion(selection: &mut Selection, kind: PieceKind) -> Option<MoveCommand> {
+    let (from, to) = selection.pending_promotion?;
+    let cmd = MoveCommand {
+        from,
+        to,
+        promotion: Some(kind),
+        source: CommandSource::Pointer,
+    };
+    debug!(?cmd, "promotion chosen, move command sent");
+    *selection = Selection::default();
+    Some(cmd)
+}
+
 /// @brief Applies the click rules to one clicked square.
 /// @return A move command when the click completes a move.
-/// @note Promotions always become a queen in the alpha; a choice UI comes in beta.
 fn on_square_clicked(
     selection: &mut Selection,
     game: &Game,
     square: Square,
 ) -> Option<MoveCommand> {
-    // A click on a highlighted target plays the move.
+    // While the promotion picker is open, a board click cancels the move.
+    if selection.pending_promotion.is_some() {
+        debug!("promotion cancelled");
+        *selection = Selection::default();
+        return None;
+    }
+
+    // A click on a highlighted target plays the move, or asks for a promotion piece first.
     if let Some(mv) = selection.moves.iter().find(|mv| mv.to == square) {
+        if mv.promotion.is_some() {
+            debug!(from = %mv.from, to = %mv.to, "promotion piece needed");
+            selection.pending_promotion = Some((mv.from, mv.to));
+            return None;
+        }
         let cmd = MoveCommand {
             from: mv.from,
             to: mv.to,
-            promotion: mv.promotion.map(|_| PieceKind::Queen),
+            promotion: None,
             source: CommandSource::Pointer,
         };
         debug!(?cmd, "move command sent");
@@ -118,6 +156,7 @@ fn on_square_clicked(
         *selection = Selection {
             square: Some(square),
             moves,
+            pending_promotion: None,
         };
     } else if selection.square.is_some() {
         debug!("selection cleared");
@@ -175,13 +214,26 @@ mod tests {
         assert_eq!(selection, Selection::default());
     }
 
-    /// @brief A pawn reaching the last rank promotes to a queen.
+    /// @brief A pawn reaching the last rank waits for a piece choice; a board click cancels instead.
     #[test]
-    fn promotion_becomes_queen() {
+    fn promotion_waits_for_a_choice() {
         let game = Game::from_fen("8/P7/8/8/8/8/8/k6K w - - 0 1").expect("valid fen");
         let mut selection = Selection::default();
+
         on_square_clicked(&mut selection, &game, sq("a7"));
-        let cmd = on_square_clicked(&mut selection, &game, sq("a8")).expect("move sent");
-        assert_eq!(cmd.promotion, Some(PieceKind::Queen));
+        assert_eq!(on_square_clicked(&mut selection, &game, sq("a8")), None);
+        assert_eq!(selection.pending_promotion, Some((sq("a7"), sq("a8"))));
+        let cmd = choose_promotion(&mut selection, PieceKind::Knight).expect("move sent");
+        assert_eq!(
+            (cmd.from, cmd.to, cmd.promotion),
+            (sq("a7"), sq("a8"), Some(PieceKind::Knight))
+        );
+        assert_eq!(selection, Selection::default());
+
+        on_square_clicked(&mut selection, &game, sq("a7"));
+        on_square_clicked(&mut selection, &game, sq("a8"));
+        on_square_clicked(&mut selection, &game, sq("d4"));
+        assert_eq!(selection, Selection::default());
+        assert_eq!(choose_promotion(&mut selection, PieceKind::Queen), None);
     }
 }

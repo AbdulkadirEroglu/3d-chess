@@ -10,6 +10,7 @@ publish.workspace = true
 [dependencies]
 bevy.workspace = true
 chess_core.workspace = true
+chess_ai.workspace = true
 
 [lints]
 workspace = true

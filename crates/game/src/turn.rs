@@ -2,7 +2,7 @@
 //! @brief Turn flow: owns the active game, applies move commands from any source, and announces played moves.
 
 use bevy::prelude::*;
-use chess_core::{Game, Move, MoveCommand};
+use chess_core::{Game, GameResult, Move, MoveCommand};
 
 /// @brief The game being played: the single source of truth for every piece and square.
 /// @note The 3D scene only shows this; never read game state back from entities.
@@ -96,6 +96,9 @@ fn apply_commands(
                 "move played"
             );
             played.write(MovePlayed(mv));
+            if game.0.result() != GameResult::Ongoing {
+                info!(result = ?game.0.result(), "game over");
+            }
         }
     }
 }

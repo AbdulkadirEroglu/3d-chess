@@ -33,7 +33,7 @@ Goal: the core loop works end to end with placeholder art, playable solo against
 - [x] Basic move animation (piece travels to target square)
 - [x] Basic capture effect (defender breaks / disappears)
 - [x] Local hot-seat 2-player
-- [ ] Simple AI opponent (`chess_ai`: alpha-beta), runs off the main thread
+- [x] Simple AI opponent (`chess_ai`: alpha-beta, depth 4), runs off the main thread (plays Black until mode select)
 - [ ] Game mode select: human vs human, human vs AI, pick side
 - [x] Game-over screen, restart (R key; a proper menu comes with mode select)
 
@@ -50,7 +50,7 @@ Goal: it looks and feels like animated chess, playable by strangers.
 - [ ] Animation state machine: walk → attack → defender dies → attacker settles → next turn
 - [ ] Piece-specific movement (knight jumps, rook slides, etc.)
 - [ ] AI difficulty levels, stronger search (transposition table, move ordering)
-- [ ] Promotion choice UI (alpha always promotes to a queen)
+- [x] Promotion choice UI (pulled into alpha)
 - [ ] Main menu, settings (graphics, audio, animation speed)
 - [ ] Sound effects and music
 - [ ] Undo / move history, save & load game (PGN)

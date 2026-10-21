@@ -2,7 +2,7 @@
 //! @brief The game: position, legal moves, applying move commands, and the result.
 
 use cozy_chess as cc;
-use tracing::{info, trace, warn};
+use tracing::{trace, warn};
 
 use crate::command::{MoveCommand, MoveError};
 use crate::types::{Color, Piece, PieceKind, Square};
@@ -160,11 +160,8 @@ impl Game {
         self.history.push(self.board.clone());
         self.result = self.compute_result();
 
-        // trace, not info: the AI and perft apply moves in bulk. The game crate logs played moves.
+        // trace only: the AI search applies moves in bulk. The game crate logs played moves and game over.
         trace!(?cmd, ?mv, "move applied");
-        if self.result != GameResult::Ongoing {
-            info!(result = ?self.result, "game over");
-        }
         Ok(mv)
     }
 

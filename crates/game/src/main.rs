@@ -1,6 +1,7 @@
 //! @file main.rs
 //! @brief Entry point: builds the Bevy app and registers the game plugins.
 
+mod ai;
 mod animation;
 mod board;
 mod camera;
@@ -8,6 +9,9 @@ mod input;
 mod pieces;
 mod turn;
 mod ui;
+
+#[cfg(test)]
+mod test_support;
 
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
@@ -50,6 +54,7 @@ fn main() {
             input::InputPlugin,
             animation::AnimationPlugin,
             ui::UiPlugin,
+            ai::AiPlugin,
         ))
         .add_systems(Startup, log_startup)
         .run();

@@ -25,9 +25,9 @@ Tests: `crates/chess_core/tests/rules.rs` covers perft (start, Kiwipete, en pass
 ### `crates/chess_ai`: computer opponent (no Bevy)
 | Module | Owns | Key items | Status |
 |---|---|---|---|
-| `lib.rs` | Crate root, re-exports | — | done |
-| `search` | Alpha-beta search, picking the best move | — | planned |
-| `eval` | Position evaluation | — | planned |
+| `lib.rs` | Negamax alpha-beta search, capture-first move ordering, evaluation (material + center/advance bonuses). Deterministic | `choose_move(game, depth)` | done |
+
+Tests: `crates/chess_ai/tests/search.rs` (mate in one, free material, promotion, game over, determinism + depth timing). Split into `search`/`eval` modules only when the file grows.
 
 ### `crates/game`: Bevy app
 | Module | Owns | Key items | Status |
@@ -35,14 +35,15 @@ Tests: `crates/chess_core/tests/rules.rs` covers perft (start, Kiwipete, en pass
 | `main.rs` | App setup, logging setup, plugin registration | — | done |
 | `board` | Board tiles and base slab, scene lighting, square → world position, selection highlights | `BoardPlugin`, `BoardSquare`, `square_to_world`, `SQUARE_SIZE` | done |
 | `pieces` | Piece entities (re)spawned from `ActiveGame` on every `GameStarted`; alpha placeholder shapes (theme models in beta) | `PiecesPlugin`, `PieceOnBoard`, `placeholder_shape` | done |
-| `input` | Mouse picking: select a piece, click a target → `MoveCommandSent` (alpha: promotions become a queen); R after game over → `NewGameRequested` | `InputPlugin`, `Selection` | done |
+| `input` | Mouse picking: select a piece, click a target → `MoveCommandSent`; promotions wait for a `PromotionChoice` click; locked during animations and the AI's turn; R after game over → `NewGameRequested` | `InputPlugin`, `Selection` | done |
 | `turn` | Owns the active game, applies `MoveCommandSent` via `chess_core`, announces `MovePlayed`; starts new games (`NewGameRequested` → `GameStarted`); defines the per-frame `GameSet` order | `TurnPlugin`, `ActiveGame`, `MoveCommandSent`, `MovePlayed`, `NewGameRequested`, `GameStarted`, `GameSet` | done |
 | `animation` | Animation queue: slide (knights hop), capture shrink, castling rook, promotion swap; locks input while busy | `AnimationPlugin`, `AnimationQueue` (`is_busy`) | done |
-| `ai` | Runs `chess_ai` on a background task | — | planned |
+| `ai` | Runs `chess_ai` on `AsyncComputeTaskPool` on the AI's turn, sends its move as a `MoveCommandSent` (source `Ai`); cancels on new game | `AiPlugin`, `AiPlayer` (`side`, `depth`) | done |
 | `theme` | Theme pack loading; the only place asset paths live | — | planned |
 | `camera` | Orbit camera: right-drag rotates, scroll zooms; background color | `CameraPlugin` | done |
 | `audio` | Sound effects and music | — | planned |
-| `ui` | Status line (turn, check) and game-over banner ("Press R to play again"); menus come in step 7 | `UiPlugin` | partial |
+| `ui` | Status line (turn, check, AI), promotion picker, game-over banner ("Press R to play again"); menus come in step 7 | `UiPlugin`, `PromotionChoice` | partial |
+| `test_support` | Test-only: headless app and `play()` helper shared by all `game` tests | `headless_app`, `play` | done |
 
 ---
 
@@ -75,6 +76,7 @@ Use exactly these names in code, comments and docs. Don't invent synonyms.
 | `MovePlayed` | Bevy message carrying a `Move` the rules accepted; the animation queue shows it | move event, applied move |
 | `GameSet` | The per-frame system order: `Input` → `Turn` → `Animation` | stage, phase |
 | `NewGameRequested` / `GameStarted` | Bevy messages: input asks for a new game; the turn flow announces that one began (startup or restart) | restart event, reset |
+| AI | The computer opponent (`chess_ai`, `game::ai`, `AiPlayer`) | bot, engine, computer, CPU |
 | `ActiveGame` | Bevy resource holding the `Game` being played; the only source of truth in the `game` crate | game state, board state |
 | `Move` | A legal move as `chess_core` represents it | action, turn |
 | `MoveCommand` | A *request* to make a move, from any input source; may be rejected | move request, order, input move |
