@@ -10,7 +10,7 @@ use chess_core::PieceKind;
 
 use crate::board::square_to_world;
 use crate::pieces::{PieceOnBoard, placeholder_shape};
-use crate::turn::{GameSet, MovePlayed};
+use crate::turn::{GameSet, GameStarted, MovePlayed};
 
 /// @brief Seconds for a piece to slide to its square.
 const SLIDE_SECONDS: f32 = 0.45;
@@ -31,7 +31,7 @@ impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AnimationQueue>().add_systems(
             Update,
-            (queue_moves, play_animations)
+            (reset_on_new_game, queue_moves, play_animations)
                 .chain()
                 .in_set(GameSet::Animation),
         );
@@ -82,6 +82,27 @@ enum Step {
         /// @brief What it becomes.
         kind: PieceKind,
     },
+}
+
+/// @brief Drops pending animations when a new game starts; the pieces get respawned from scratch.
+fn reset_on_new_game(
+    mut commands: Commands,
+    mut started: MessageReader<GameStarted>,
+    mut queue: ResMut<AnimationQueue>,
+) {
+    if started.read().count() == 0 || !queue.is_busy() {
+        return;
+    }
+    // A piece mid-capture has no `PieceOnBoard`, so the respawn wouldn't remove it.
+    for step in queue.steps.drain(..) {
+        if let Step::Capture { entity, .. } = step
+            && let Ok(mut captured) = commands.get_entity(entity)
+        {
+            captured.despawn();
+        }
+    }
+    queue.elapsed = 0.0;
+    debug!("animations cleared for new game");
 }
 
 /// @brief Turns each played move into steps and updates the piece components to match the rules.

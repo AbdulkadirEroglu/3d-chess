@@ -37,12 +37,13 @@ Tests: `crates/chess_ai/tests/search.rs` (mate in one, free material, promotion,
 | `pieces` | Piece entities (re)spawned from `ActiveGame` on every `GameStarted`; alpha placeholder shapes (theme models in beta) | `PiecesPlugin`, `PieceOnBoard`, `placeholder_shape` | done |
 | `input` | Mouse picking: select a piece, click a target → `MoveCommandSent`; promotions wait for a `PromotionChoice` click; locked during animations and the AI's turn; R after game over → `NewGameRequested` | `InputPlugin`, `Selection` | done |
 | `turn` | Owns the active game, applies `MoveCommandSent` via `chess_core`, announces `MovePlayed`; starts new games (`NewGameRequested` → `GameStarted`); defines the per-frame `GameSet` order | `TurnPlugin`, `ActiveGame`, `MoveCommandSent`, `MovePlayed`, `NewGameRequested`, `GameStarted`, `GameSet` | done |
-| `animation` | Animation queue: slide (knights hop), capture shrink, castling rook, promotion swap; locks input while busy | `AnimationPlugin`, `AnimationQueue` (`is_busy`) | done |
+| `animation` | Animation queue: slide (knights hop), capture shrink, castling rook, promotion swap; locks input while busy; cleared on new game | `AnimationPlugin`, `AnimationQueue` (`is_busy`) | done |
 | `ai` | Runs `chess_ai` on `AsyncComputeTaskPool` on the AI's turn, sends its move as a `MoveCommandSent` (source `Ai`); cancels on new game | `AiPlugin`, `AiPlayer` (`side`, `depth`) | done |
 | `theme` | Theme pack loading; the only place asset paths live | — | planned |
-| `camera` | Orbit camera: right-drag rotates, scroll zooms; background color | `CameraPlugin` | done |
+| `camera` | Orbit camera: right-drag rotates, scroll zooms; faces the human's side on game start; background color | `CameraPlugin` | done |
 | `audio` | Sound effects and music | — | planned |
-| `ui` | Status line (turn, check, AI), promotion picker, game-over banner ("Press R to play again"); menus come in step 7 | `UiPlugin`, `PromotionChoice` | partial |
+| `ui` | Status line (turn, check, AI), promotion picker, game-over banner; shared UI building blocks | `UiPlugin`, `PromotionChoice`, `spawn_button`, `centered_layer`, `set_visible`, `TEXT_COLOR`, `PANEL_BACKGROUND`, `BUTTON_BACKGROUND` | done |
+| `menu` | Main menu (opponent, side, AI level, Start), app flow states, Esc back to menu | `MenuPlugin`, `AppState`, `MatchSettings`, `AiLevel` | done |
 | `test_support` | Test-only: headless app and `play()` helper shared by all `game` tests | `headless_app`, `play` | done |
 
 ---
@@ -56,6 +57,8 @@ Tests: `crates/chess_ai/tests/search.rs` (mate in one, free material, promotion,
 | A new way for players to give moves | A new producer of `MoveCommand` in `game::input` (or its own crate later) |
 | A system that sends, applies or shows moves | Put it in the matching `turn::GameSet` (`Input` → `Turn` → `Animation`) so a move flows through in one frame |
 | An asset path | The theme manifest, loaded by `game::theme` |
+| A UI button, panel or overlay | Build it from `ui::spawn_button` / `ui::centered_layer` and the shared colors; never copy the node setup |
+| A system that should only run during play (or only in the menu) | `.run_if(in_state(AppState::Playing))` |
 | A tunable number (speeds, sizes, colors) | A `const` at the top of the module that uses it; move it to settings only when players need to change it |
 
 ---
@@ -76,7 +79,9 @@ Use exactly these names in code, comments and docs. Don't invent synonyms.
 | `MovePlayed` | Bevy message carrying a `Move` the rules accepted; the animation queue shows it | move event, applied move |
 | `GameSet` | The per-frame system order: `Input` → `Turn` → `Animation` | stage, phase |
 | `NewGameRequested` / `GameStarted` | Bevy messages: input asks for a new game; the turn flow announces that one began (startup or restart) | restart event, reset |
-| AI | The computer opponent (`chess_ai`, `game::ai`, `AiPlayer`) | bot, engine, computer, CPU |
+| AI | The computer opponent (`chess_ai`, `game::ai`, `AiPlayer`); shown to players as "Computer" in the menu | bot, engine, CPU |
+| `AppState` | App flow: `Menu` or `Playing` | screen, scene, mode |
+| `MatchSettings` / `AiLevel` | The menu's choices (opponent, side, AI level) applied on Start | config, options, difficulty |
 | `ActiveGame` | Bevy resource holding the `Game` being played; the only source of truth in the `game` crate | game state, board state |
 | `Move` | A legal move as `chess_core` represents it | action, turn |
 | `MoveCommand` | A *request* to make a move, from any input source; may be rejected | move request, order, input move |

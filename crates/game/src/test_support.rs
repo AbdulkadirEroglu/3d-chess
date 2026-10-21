@@ -4,18 +4,21 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
+use bevy::state::app::StatesPlugin;
 use bevy::time::TimeUpdateStrategy;
 use chess_core::{CommandSource, Game, MoveCommand, PieceKind, Square};
 
 use crate::animation::{AnimationPlugin, AnimationQueue};
+use crate::menu::AppState;
 use crate::pieces::PiecesPlugin;
 use crate::turn::{ActiveGame, MoveCommandSent, TurnPlugin};
 
-/// @brief Headless app with rules, pieces and animations, starting from `game`.
+/// @brief Headless app with rules, pieces and animations, starting from `game`, already playing.
 /// @note Time advances a fixed 100 ms per update, so animation tests are deterministic.
 pub fn headless_app(game: Game) -> App {
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+    app.add_plugins((MinimalPlugins, AssetPlugin::default(), StatesPlugin))
+        .insert_state(AppState::Playing)
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
         .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(

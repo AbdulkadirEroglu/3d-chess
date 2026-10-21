@@ -26,16 +26,16 @@ Goal: the core loop works end to end with placeholder art, playable solo against
 - [x] Bevy project setup, pinned version, fast-compile config
 - [x] 3D board, orbit camera, lighting
 - [x] Placeholder pieces (simple shapes)
-- [ ] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
+- [x] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
 - [x] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
-- [x] Mouse input: select piece, highlight legal moves, choose target (promotions auto-queen in alpha)
+- [x] Mouse input: select piece, highlight legal moves, choose target, promotion piece picker
 - [x] `MoveCommand` pipeline: input → rules validation → animation queue
 - [x] Basic move animation (piece travels to target square)
 - [x] Basic capture effect (defender breaks / disappears)
 - [x] Local hot-seat 2-player
-- [x] Simple AI opponent (`chess_ai`: alpha-beta, depth 4), runs off the main thread (plays Black until mode select)
-- [ ] Game mode select: human vs human, human vs AI, pick side
-- [x] Game-over screen, restart (R key; a proper menu comes with mode select)
+- [x] Simple AI opponent (`chess_ai`: alpha-beta, Easy/Medium/Hard), runs off the main thread
+- [x] Game mode select: human vs human, human vs AI, pick side (main menu; Esc returns to it)
+- [x] Game-over screen, restart (R to play again, Esc for the menu)
 
 **Exit criteria:** a full game can be played start to finish on Linux, vs a human or the AI, with no rule bugs (perft suite passing).
 
@@ -49,7 +49,8 @@ Goal: it looks and feels like animated chess, playable by strangers.
   - [ ] Pre-fractured meshes / debris for captures
 - [ ] Animation state machine: walk → attack → defender dies → attacker settles → next turn
 - [ ] Piece-specific movement (knight jumps, rook slides, etc.)
-- [ ] AI difficulty levels, stronger search (transposition table, move ordering)
+- [x] AI difficulty levels: Easy / Medium / Hard (pulled into alpha)
+- [ ] Stronger search (transposition table, iterative deepening)
 - [x] Promotion choice UI (pulled into alpha)
 - [ ] Main menu, settings (graphics, audio, animation speed)
 - [ ] Sound effects and music

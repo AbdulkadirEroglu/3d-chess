@@ -11,6 +11,7 @@ use chess_core::{CommandSource, Game, GameResult, Move, MoveCommand, PieceKind, 
 use crate::ai::AiPlayer;
 use crate::animation::AnimationQueue;
 use crate::board::BoardSquare;
+use crate::menu::AppState;
 use crate::pieces::PieceOnBoard;
 use crate::turn::{ActiveGame, GameSet, MoveCommandSent, NewGameRequested};
 use crate::ui::PromotionChoice;
@@ -24,7 +25,9 @@ impl Plugin for InputPlugin {
             .init_resource::<Selection>()
             .add_systems(
                 Update,
-                (handle_clicks, request_new_game).in_set(GameSet::Input),
+                (handle_clicks, request_new_game)
+                    .run_if(in_state(AppState::Playing))
+                    .in_set(GameSet::Input),
             );
     }
 }

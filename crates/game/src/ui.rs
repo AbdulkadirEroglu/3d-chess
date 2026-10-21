@@ -1,6 +1,7 @@
 //! @file ui.rs
 //! @brief On-screen UI: status line (turn, check, AI), promotion piece picker, game-over banner.
 
+use bevy::ecs::hierarchy::ChildSpawnerCommands;
 use bevy::picking::Pickable;
 use bevy::prelude::*;
 use chess_core::{Color as Side, Game, GameResult, PieceKind};
@@ -8,6 +9,7 @@ use chess_core::{Color as Side, Game, GameResult, PieceKind};
 use crate::ai::AiPlayer;
 use crate::animation::AnimationQueue;
 use crate::input::Selection;
+use crate::menu::AppState;
 use crate::turn::{ActiveGame, GameSet};
 
 /// @brief Size of the status line at the top.
@@ -20,13 +22,13 @@ const BANNER_FONT_SIZE: f32 = 40.0;
 const PICKER_FONT_SIZE: f32 = 26.0;
 
 /// @brief Text color: cream, like the white pieces.
-const TEXT_COLOR: Color = Color::srgb(0.95, 0.92, 0.85);
+pub const TEXT_COLOR: Color = Color::srgb(0.95, 0.92, 0.85);
 
-/// @brief Banner and picker background: dark and slightly see-through.
-const PANEL_BACKGROUND: Color = Color::srgba(0.08, 0.08, 0.10, 0.88);
+/// @brief Panel background (banner, picker, menu): dark and slightly see-through.
+pub const PANEL_BACKGROUND: Color = Color::srgba(0.08, 0.08, 0.10, 0.88);
 
-/// @brief Promotion button background: dark stone with a gold tint.
-const BUTTON_BACKGROUND: Color = Color::srgb(0.30, 0.25, 0.17);
+/// @brief Button background: dark stone with a gold tint.
+pub const BUTTON_BACKGROUND: Color = Color::srgb(0.30, 0.25, 0.17);
 
 /// @brief Spawns the UI and keeps it in sync with the game.
 pub struct UiPlugin;
@@ -61,7 +63,7 @@ struct PromotionPicker;
 pub struct PromotionChoice(pub PieceKind);
 
 /// @brief Full-screen layer that centers its child and never catches clicks itself.
-fn centered_layer() -> (Node, Visibility, Pickable) {
+pub fn centered_layer() -> (Node, Visibility, Pickable) {
     (
         Node {
             position_type: PositionType::Absolute,
@@ -74,6 +76,33 @@ fn centered_layer() -> (Node, Visibility, Pickable) {
         Visibility::Hidden,
         Pickable::IGNORE,
     )
+}
+
+/// @brief Spawns a clickable button with a text label; `marker` identifies what it does.
+/// @note The label ignores picking, so clicks land on the button entity itself.
+pub fn spawn_button(
+    parent: &mut ChildSpawnerCommands,
+    marker: impl Bundle,
+    label: &str,
+    font_size: f32,
+) {
+    parent
+        .spawn((
+            marker,
+            Node {
+                padding: UiRect::axes(Val::Px(18.0), Val::Px(10.0)),
+                ..default()
+            },
+            BackgroundColor(BUTTON_BACKGROUND),
+        ))
+        .with_children(|button| {
+            button.spawn((
+                Text::new(label),
+                TextFont::from_font_size(font_size),
+                TextColor(TEXT_COLOR),
+                Pickable::IGNORE,
+            ));
+        });
 }
 
 /// @brief Spawns the status line, and the hidden game-over banner and promotion picker.
@@ -141,23 +170,7 @@ fn spawn_ui(mut commands: Commands) {
                                 (PieceKind::Bishop, "Bishop"),
                                 (PieceKind::Knight, "Knight"),
                             ] {
-                                row.spawn((
-                                    PromotionChoice(kind),
-                                    Node {
-                                        padding: UiRect::axes(Val::Px(18.0), Val::Px(10.0)),
-                                        ..default()
-                                    },
-                                    BackgroundColor(BUTTON_BACKGROUND),
-                                ))
-                                .with_children(|button| {
-                                    // The label ignores picking, so clicks land on the button itself.
-                                    button.spawn((
-                                        Text::new(label),
-                                        TextFont::from_font_size(PICKER_FONT_SIZE),
-                                        TextColor(TEXT_COLOR),
-                                        Pickable::IGNORE,
-                                    ));
-                                });
+                                spawn_button(row, PromotionChoice(kind), label, PICKER_FONT_SIZE);
                             }
                         });
                 });
@@ -167,6 +180,7 @@ fn spawn_ui(mut commands: Commands) {
 /// @brief Updates the status line, and shows the banner once the game is over and the board is still.
 /// @note Text is only written when it changes, so the layout isn't redone every frame.
 fn update_ui(
+    state: Res<State<AppState>>,
     game: Res<ActiveGame>,
     ai: Res<AiPlayer>,
     queue: Res<AnimationQueue>,
@@ -174,14 +188,20 @@ fn update_ui(
     mut banner_text: Query<&mut Text, (With<BannerText>, Without<StatusText>)>,
     mut banner: Query<&mut Visibility, With<Banner>>,
 ) {
-    let status_line = status_text(&game.0, ai.side);
+    // The menu covers the board, so the HUD stays empty there.
+    let in_menu = *state.get() == AppState::Menu;
+    let status_line = if in_menu {
+        String::new()
+    } else {
+        status_text(&game.0, ai.side)
+    };
     for mut text in &mut status {
         if text.0 != status_line {
             text.0 = status_line.clone();
         }
     }
 
-    let message = if queue.is_busy() {
+    let message = if in_menu || queue.is_busy() {
         None
     } else {
         banner_message(game.0.result())
@@ -206,7 +226,7 @@ fn update_promotion_picker(
 }
 
 /// @brief Shows or hides UI layers, touching them only when the state actually changes.
-fn set_visible<F: bevy::ecs::query::QueryFilter>(
+pub fn set_visible<F: bevy::ecs::query::QueryFilter>(
     layers: &mut Query<&mut Visibility, F>,
     visible: bool,
 ) {
@@ -250,7 +270,9 @@ fn banner_message(result: GameResult) -> Option<String> {
         GameResult::ThreefoldRepetition => "Draw - threefold repetition".to_string(),
         GameResult::InsufficientMaterial => "Draw - insufficient material".to_string(),
     };
-    Some(format!("{headline}\nPress R to play again"))
+    Some(format!(
+        "{headline}\nPress R to play again, Esc for the menu"
+    ))
 }
 
 /// @brief Display name of a side.
@@ -302,11 +324,11 @@ mod tests {
         assert_eq!(status_text(&game, None), "Game over");
         assert_eq!(
             banner_message(game.result()).as_deref(),
-            Some("Checkmate - Black wins\nPress R to play again")
+            Some("Checkmate - Black wins\nPress R to play again, Esc for the menu")
         );
         assert_eq!(
             banner_message(GameResult::Stalemate).as_deref(),
-            Some("Draw - stalemate\nPress R to play again")
+            Some("Draw - stalemate\nPress R to play again, Esc for the menu")
         );
     }
 }

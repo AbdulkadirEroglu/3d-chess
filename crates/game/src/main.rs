@@ -6,6 +6,7 @@ mod animation;
 mod board;
 mod camera;
 mod input;
+mod menu;
 mod pieces;
 mod turn;
 mod ui;
@@ -55,6 +56,7 @@ fn main() {
             animation::AnimationPlugin,
             ui::UiPlugin,
             ai::AiPlugin,
+            menu::MenuPlugin,
         ))
         .add_systems(Startup, log_startup)
         .run();

@@ -1,8 +1,14 @@
 //! @file camera.rs
 //! @brief Orbit camera around the board: hold the right mouse button and drag to rotate, scroll to zoom.
 
+use std::f32::consts::PI;
+
 use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll, MouseScrollUnit};
 use bevy::prelude::*;
+use chess_core::Color as Side;
+
+use crate::menu::MatchSettings;
+use crate::turn::GameStarted;
 
 /// @brief Point the camera orbits around and looks at: the board center.
 const FOCUS: Vec3 = Vec3::ZERO;
@@ -38,7 +44,7 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(BACKGROUND_COLOR))
             .add_systems(Startup, spawn_camera)
-            .add_systems(Update, orbit_camera);
+            .add_systems(Update, (orbit_camera, face_player_side));
     }
 }
 
@@ -74,6 +80,27 @@ fn spawn_camera(mut commands: Commands) {
         orbit,
     ));
     debug!("camera spawned");
+}
+
+/// @brief When a game starts, turns the camera to the human's side: Black's side when playing Black vs the AI.
+fn face_player_side(
+    mut started: MessageReader<GameStarted>,
+    settings: Res<MatchSettings>,
+    mut cameras: Query<(&mut OrbitCamera, &mut Transform)>,
+) {
+    if started.read().count() == 0 {
+        return;
+    }
+    let yaw = if settings.vs_ai && settings.human_side == Side::Black {
+        PI
+    } else {
+        0.0
+    };
+    for (mut orbit, mut transform) in &mut cameras {
+        orbit.yaw = yaw;
+        *transform = orbit_transform(&orbit);
+    }
+    debug!(yaw, "camera faces the player's side");
 }
 
 /// @brief Rotates the camera while the right mouse button is held, and zooms on scroll.

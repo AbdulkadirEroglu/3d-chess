@@ -8,6 +8,7 @@ use bevy::tasks::{AsyncComputeTaskPool, Task};
 use chess_core::{Color as Side, CommandSource, GameResult, Move, MoveCommand};
 
 use crate::animation::AnimationQueue;
+use crate::menu::AppState;
 use crate::turn::{ActiveGame, GameSet, GameStarted, MoveCommandSent};
 
 /// @brief How many plies (half-moves) the AI looks ahead. Depth 4 answers in milliseconds.
@@ -24,13 +25,14 @@ impl Plugin for AiPlugin {
                 Update,
                 (cancel_on_new_game, start_ai_turn, finish_ai_turn)
                     .chain()
+                    .run_if(in_state(AppState::Playing))
                     .in_set(GameSet::Input),
             );
     }
 }
 
 /// @brief Which side the AI plays, and how deep it searches.
-/// @note Black by default until the mode select menu (alpha step 7) lets players choose.
+/// @note Set by the menu's Start button; Black by default.
 #[derive(Resource, Debug)]
 pub struct AiPlayer {
     /// @brief The AI's side; None for two human players.
