@@ -142,13 +142,18 @@ Player-facing UI uses **Bevy UI**. `bevy_egui` is for debug and dev tooling only
 | `criterion` `0.8` | AI search benchmarks (nodes/sec, time to depth) |
 | `cargo clippy -- -D warnings` | Lints; warnings fail CI |
 | `cargo fmt --check` | Formatting |
-| `cargo-deny` | License allow-list, security advisories, duplicate crates |
+| `cargo-deny` | License allow-list, security advisories, duplicate crates (`deny.toml`) |
+| `cargo-machete` | Unused dependencies |
+| `jscpd` | Copy-paste detection in CI (fails above 3% duplication) |
+| Workspace lints | Root `Cargo.toml` `[workspace.lints]`: docs on all items, no `println!`/`dbg!`/`unwrap()`/`todo!()`, function size limits (`clippy.toml`), lint silencing needs a reason |
+| Pre-commit hook | `.githooks/pre-commit`: fmt, clippy, test, deny. Enable with `git config core.hooksPath .githooks` |
+| Claude Code config | `.claude/settings.json`: agents can't commit/push; rustfmt after edits; clippy check when an agent finishes. Skills `/feature` and `/audit` in `.claude/skills/` |
 
 Rule: `chess_core` and `chess_ai` carry the bulk of the tests. The `game` crate gets tests for turn flow and command handling using a headless Bevy `App` (no window).
 
 ## 5. Build, CI, packaging
 
-- **Fast dev builds:** Bevy `dynamic_linking` feature in dev only (never in release builds), the `mold` linker on Linux, and `opt-level = 1` for our code with `opt-level = 3` for dependencies in the dev profile.
+- **Fast dev builds:** Bevy `dynamic_linking` feature in dev only (`cargo run -p game --features bevy/dynamic_linking`, never in release builds), optionally the `mold` linker on Linux, and `opt-level = 1` for our code with `opt-level = 3` for dependencies in the dev profile.
 - **Release profile:** `lto = "thin"`, `codegen-units = 1`, `strip = true`.
 - **CI:** GitHub Actions running fmt, clippy, test, deny and a Linux release build on every PR. Add a Windows job at the Steam milestone and an Android job at the Android milestone.
 - **Linux packaging (v1.0):** AppImage and/or Flatpak. Steam uses its own depot.

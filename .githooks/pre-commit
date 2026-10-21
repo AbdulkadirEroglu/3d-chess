@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# @brief Pre-commit checks: format, lints, tests, licenses.
+# @note Enable once per clone: git config core.hooksPath .githooks
+#       Skip in an emergency: git commit --no-verify
+set -euo pipefail
+
+echo "pre-commit: cargo fmt"
+cargo fmt --all --check
+
+echo "pre-commit: cargo clippy"
+cargo clippy --workspace --all-targets --quiet -- -D warnings
+
+echo "pre-commit: cargo test"
+cargo test --workspace --quiet
+
+if command -v cargo-deny >/dev/null; then
+    echo "pre-commit: cargo deny"
+    cargo deny --log-level error check
+fi

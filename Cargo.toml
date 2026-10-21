@@ -1,0 +1,54 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Every dependency is declared here and referenced with `workspace = true`.
+# Only crates approved in TECH_STACK.md.
+[workspace.dependencies]
+bevy = "0.20"
+cozy-chess = "0.3"
+thiserror = "2"
+tracing = "0.1"
+
+[workspace.lints.rust]
+missing_docs = "warn"
+unsafe_code = "deny"
+
+# CI runs clippy with `-D warnings`, so every "warn" here fails the build.
+[workspace.lints.clippy]
+# Documentation on everything, private items included.
+missing_docs_in_private_items = "warn"
+# Output goes through logging, never println!/dbg!.
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+# No panicking shortcuts or leftover stubs.
+unwrap_used = "warn"
+todo = "warn"
+unimplemented = "warn"
+# Keep functions readable (thresholds in clippy.toml).
+too_many_lines = "warn"
+cognitive_complexity = "warn"
+# Silencing a lint needs a written reason: #[expect(lint, reason = "...")].
+allow_attributes_without_reason = "warn"
+# Bevy systems take many parameters and nested query types by design.
+too_many_arguments = "allow"
+type_complexity = "allow"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

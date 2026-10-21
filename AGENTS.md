@@ -9,6 +9,7 @@ Animated 3D chess in Rust + Bevy: the pieces are living troops that walk, fight 
 Before working, read:
 - `ROADMAP.md`: milestones and which one is current. **Only work on the current milestone's scope.**
 - `TECH_STACK.md`: the approved crates, versions, layout and policies.
+- `ARCHITECTURE.md`: **the code map and glossary.** What exists, where it lives, and what things are called.
 - `docs/adr/`: past architecture decisions, if any.
 
 ## Working principles
@@ -18,6 +19,20 @@ Before working, read:
 - **Document as you go.** Comments are simple, short and easy to understand (see *Comments* below). When behavior, architecture or workflow changes, update the matching doc (`ROADMAP.md`, `TECH_STACK.md`, `AGENTS.md`, `docs/`) in the same change.
 - **Always log.** Every feature logs what it does (see *Logging* below).
 - **Never commit.** The maintainer makes all commits. Don't run `git commit`, `git push`, `git rebase`, `git merge` or anything that rewrites history. If changes really have to be set aside, use `git stash push -m "<what and why>"` and tell the maintainer clearly that there are stashed changes waiting to be reviewed and committed.
+
+## Before and after writing code
+
+**Before:**
+1. Read `ARCHITECTURE.md`.
+2. **Search before you write.** For every function, type or constant you're about to add, search the codebase (`rg`) for an existing one. Reuse or extend it. Never create a second function that does the same thing somewhere else.
+3. Use the glossary names in `ARCHITECTURE.md`. No synonyms.
+4. Match the style of the reference code listed in `ARCHITECTURE.md`.
+5. For anything touching more than 3 files or adding a module: write a short plan first and get it approved.
+
+**After:**
+1. Update `ARCHITECTURE.md` for every public item you added, moved or removed.
+2. In your final report, list every **new public item** (name + file) so duplicates are easy to spot.
+3. Touch only what the task needs: no drive-by refactors, renames or reformatting of unrelated code, and no new files unless needed.
 
 ## Commands
 
@@ -29,7 +44,12 @@ cargo test --workspace               # all tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all
 cargo deny check                     # licenses + advisories
+cargo machete                        # unused dependencies
+npx --yes jscpd@4 crates --format rust --min-lines 8 --gitignore   # copy-paste detection
+cargo run -p game --features bevy/dynamic_linking                  # faster dev rebuilds (never for release)
 ```
+
+One-time setup per clone: `git config core.hooksPath .githooks` (runs fmt, clippy, tests and deny before each commit).
 
 Before saying a task is done, run `cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace`. All three must pass. If you can't run something, say so explicitly. Don't claim it passed.
 
@@ -95,7 +115,8 @@ Use the `tracing` macros: `error!`, `warn!`, `info!`, `debug!`, `trace!`. In the
 
 - Edition 2024, toolchain pinned in `rust-toolchain.toml`.
 - Library crates use `thiserror` error types; `anyhow` is only for binaries and tools.
-- No `unsafe` without a `// SAFETY:` comment and a reason it's needed.
+- No `unsafe` (the `unsafe_code` lint denies it). If it's ever truly needed, write an ADR first, then use a local `#[expect(unsafe_code, reason = "...")]` plus a `// SAFETY:` comment.
+- Lints are configured in the root `Cargo.toml`. **Never silence a lint to make the build pass.** Fix the code. If a lint is genuinely wrong for a spot, use `#[expect(lint, reason = "why")]` (with a reason, never a bare `#[allow]`).
 - Prefer clear code over clever code.
 - Don't leave dead code, commented-out code or `TODO`s without an issue or roadmap reference.
 
@@ -124,6 +145,7 @@ Use the `tracing` macros: `error!`, `warn!`, `info!`, `debug!`, `trace!`. In the
 ## Scope and workflow
 
 - Stay inside the current milestone. If you notice a good idea outside it, add it to `ROADMAP.md` (the backlog or the right track) instead of building it.
+- Use the project skills: `/feature <task>` to implement something with the full workflow, and `/audit` to review changes before the maintainer commits.
 - Make small, focused changes, one concern at a time, so the maintainer can review and commit them easily.
 - When you finish, suggest a commit message (imperative mood, optional scope prefix, e.g. `core: add threefold repetition`), but don't commit.
 - Significant architectural decisions get a short ADR in `docs/adr/NNNN-title.md`: context, decision, consequences.
