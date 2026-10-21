@@ -11,6 +11,9 @@ publish.workspace = true
 bevy.workspace = true
 chess_core.workspace = true
 chess_ai.workspace = true
+ron.workspace = true
+serde.workspace = true
+thiserror.workspace = true
 
 [lints]
 workspace = true

@@ -16,6 +16,8 @@ chess_core = { path = "crates/chess_core" }
 chess_ai = { path = "crates/chess_ai" }
 bevy = "0.20"
 cozy-chess = "0.3"
+ron = "0.12"
+serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 tracing = "0.1"
 

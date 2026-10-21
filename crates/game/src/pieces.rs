@@ -1,27 +1,33 @@
 //! @file pieces.rs
-//! @brief Piece entities: spawned from the active game, one per piece.
-//! @note Alpha uses placeholder shapes, taller for more valuable pieces. Theme packs replace them in beta.
+//! @brief Piece entities: one per piece in the active game, showing the theme's model or a placeholder shape.
 
-use std::f32::consts::FRAC_PI_2;
+use std::f32::consts::{FRAC_PI_2, PI};
 
+use bevy::ecs::system::SystemParam;
+use bevy::gltf::GltfAssetLabel;
 use bevy::prelude::*;
+use bevy::world_serialization::WorldAssetRoot;
 use chess_core::{Color as Side, Piece, PieceKind, Square};
 
 use crate::board::square_to_world;
+use crate::theme::{ThemeReady, ThemeStatus};
 use crate::turn::{ActiveGame, GameSet, GameStarted};
 
-/// @brief White piece color: cream stone.
+/// @brief White placeholder color: cream stone.
 const WHITE_PIECE_COLOR: Color = Color::srgb(0.93, 0.90, 0.82);
 
-/// @brief Black piece color: dark stone.
+/// @brief Black placeholder color: dark stone.
 const BLACK_PIECE_COLOR: Color = Color::srgb(0.13, 0.12, 0.14);
 
-/// @brief Spawns the pieces whenever a game starts.
+/// @brief Spawns the pieces whenever a game starts or the theme becomes ready.
 pub struct PiecesPlugin;
 
 impl Plugin for PiecesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, spawn_pieces.in_set(GameSet::Animation));
+        app.init_resource::<ThemeStatus>()
+            .init_resource::<PlaceholderMaterials>()
+            .add_message::<ThemeReady>()
+            .add_systems(Update, respawn_pieces.in_set(GameSet::Animation));
     }
 }
 
@@ -34,9 +40,98 @@ pub struct PieceOnBoard {
     pub square: Square,
 }
 
+/// @brief Shared placeholder materials, one per side.
+#[derive(Resource)]
+struct PlaceholderMaterials {
+    /// @brief Cream stone.
+    white: Handle<StandardMaterial>,
+    /// @brief Dark stone.
+    black: Handle<StandardMaterial>,
+}
+
+impl FromWorld for PlaceholderMaterials {
+    fn from_world(world: &mut World) -> Self {
+        let mut materials = world.resource_mut::<Assets<StandardMaterial>>();
+        let mut stone = |color: Color| {
+            materials.add(StandardMaterial {
+                base_color: color,
+                perceptual_roughness: 0.6,
+                ..default()
+            })
+        };
+        Self {
+            white: stone(WHITE_PIECE_COLOR),
+            black: stone(BLACK_PIECE_COLOR),
+        }
+    }
+}
+
+/// @brief Everything needed to spawn a piece: the theme's model if it has one, otherwise a placeholder.
+/// @note Used for whole-board respawns and for promotions, so pieces are built in one place.
+#[derive(SystemParam)]
+pub struct PieceSpawner<'w, 's> {
+    /// @brief Spawns and despawns entities.
+    pub commands: Commands<'w, 's>,
+    /// @brief Which theme is in use.
+    theme: Res<'w, ThemeStatus>,
+    /// @brief Loads theme models.
+    asset_server: Res<'w, AssetServer>,
+    /// @brief Stores placeholder meshes.
+    meshes: ResMut<'w, Assets<Mesh>>,
+    /// @brief Placeholder materials.
+    materials: Res<'w, PlaceholderMaterials>,
+}
+
+impl PieceSpawner<'_, '_> {
+    /// @brief Spawns a piece standing on its square, facing the opponent.
+    /// @note Models face +Z, i.e. Blender's Front view (see docs/ASSET_SPEC.md). That's toward White's
+    ///       side, so Black's pieces already face their opponent and White's are turned around.
+    pub fn spawn(&mut self, piece: Piece, square: Square) -> Entity {
+        let facing = match piece.color {
+            Side::White => Quat::from_rotation_y(PI),
+            Side::Black => Quat::IDENTITY,
+        };
+        let name = Name::new(format!("{:?} {:?} {square}", piece.color, piece.kind));
+        let marker = PieceOnBoard { piece, square };
+        let ground = square_to_world(square);
+
+        if let Some(path) = self.theme.model_path(piece) {
+            let model = self
+                .asset_server
+                .load(GltfAssetLabel::Scene(0).from_asset(path));
+            return self
+                .commands
+                .spawn((
+                    name,
+                    marker,
+                    WorldAssetRoot(model),
+                    Transform::from_translation(ground).with_rotation(facing),
+                ))
+                .id();
+        }
+
+        let (mesh, height, rotation) = placeholder_shape(piece.kind);
+        let material = match piece.color {
+            Side::White => self.materials.white.clone(),
+            Side::Black => self.materials.black.clone(),
+        };
+        // Placeholder shapes are centered on their origin; lift them so they stand on the square.
+        self.commands
+            .spawn((
+                name,
+                marker,
+                Mesh3d(self.meshes.add(mesh)),
+                MeshMaterial3d(material),
+                Transform::from_translation(ground + Vec3::Y * height / 2.0)
+                    .with_rotation(facing * rotation),
+            ))
+            .id()
+    }
+}
+
 /// @brief Placeholder mesh for a piece kind, its height, and its rotation.
 /// @note The knight's ring is stood upright so it faces the players.
-pub fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
+fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
     match kind {
         PieceKind::Pawn => (Mesh::from(Sphere::new(0.2)), 0.4, Quat::IDENTITY),
         PieceKind::Knight => (
@@ -55,65 +150,40 @@ pub fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
     }
 }
 
-/// @brief When a game starts, replaces all piece entities with one per piece in the active game.
-fn spawn_pieces(
-    mut commands: Commands,
+/// @brief When a game starts or the theme becomes ready, replaces all piece entities from the active game.
+fn respawn_pieces(
     mut started: MessageReader<GameStarted>,
-    old: Query<Entity, With<PieceOnBoard>>,
+    mut theme_ready: MessageReader<ThemeReady>,
     game: Res<ActiveGame>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    old: Query<Entity, With<PieceOnBoard>>,
+    mut spawner: PieceSpawner,
 ) {
-    if started.read().count() == 0 {
+    // Both readers must be drained every frame, so count them separately.
+    let started = started.read().count();
+    let theme_ready = theme_ready.read().count();
+    if started + theme_ready == 0 {
         return;
     }
     for entity in &old {
-        commands.entity(entity).despawn();
+        spawner.commands.entity(entity).despawn();
     }
-
-    let stone = |color: Color| StandardMaterial {
-        base_color: color,
-        perceptual_roughness: 0.6,
-        ..default()
-    };
-    let white = materials.add(stone(WHITE_PIECE_COLOR));
-    let black = materials.add(stone(BLACK_PIECE_COLOR));
-
-    let mut count = 0;
     for (square, piece) in game.0.pieces() {
-        let (mesh, height, rotation) = placeholder_shape(piece.kind);
-        let material = match piece.color {
-            Side::White => white.clone(),
-            Side::Black => black.clone(),
-        };
-        // Shapes are centered on their origin; lift them so they stand on the square.
-        let position = square_to_world(square) + Vec3::Y * height / 2.0;
-        commands.spawn((
-            Name::new(format!("{:?} {:?} {square}", piece.color, piece.kind)),
-            PieceOnBoard { piece, square },
-            Mesh3d(meshes.add(mesh)),
-            MeshMaterial3d(material),
-            Transform::from_translation(position).with_rotation(rotation),
-        ));
-        count += 1;
+        spawner.spawn(piece, square);
     }
-    debug!(count, "pieces spawned");
+    debug!(count = game.0.pieces().count(), "pieces spawned");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::turn::TurnPlugin;
+    use chess_core::Game;
 
-    /// @brief A new game spawns 32 pieces, each on the square the rules say.
+    use super::*;
+    use crate::test_support::headless_app;
+
+    /// @brief A new game spawns 32 pieces, each on the square the rules say; a restart doesn't duplicate them.
     #[test]
     fn spawns_every_piece_on_its_square() {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .init_asset::<Mesh>()
-            .init_asset::<StandardMaterial>()
-            .add_plugins((TurnPlugin, PiecesPlugin));
-        app.update();
+        let mut app = headless_app(Game::new());
 
         let game = app.world().resource::<ActiveGame>().0.clone();
         let mut query = app.world_mut().query::<(&PieceOnBoard, &Transform)>();
@@ -128,7 +198,6 @@ mod tests {
             );
         }
 
-        // Another game start replaces the pieces instead of adding a second set.
         app.world_mut().write_message(GameStarted);
         app.update();
         let mut query = app.world_mut().query::<&PieceOnBoard>();

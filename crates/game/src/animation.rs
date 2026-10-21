@@ -6,10 +6,10 @@ use std::collections::VecDeque;
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use chess_core::PieceKind;
+use chess_core::{Piece, PieceKind, Square};
 
 use crate::board::square_to_world;
-use crate::pieces::{PieceOnBoard, placeholder_shape};
+use crate::pieces::{PieceOnBoard, PieceSpawner};
 use crate::turn::{GameSet, GameStarted, MovePlayed};
 
 /// @brief Seconds for a piece to slide to its square.
@@ -75,12 +75,14 @@ enum Step {
         /// @brief Where it stands.
         from: Vec3,
     },
-    /// @brief Swap a promoted pawn's shape for its new piece.
+    /// @brief Replace a promoted pawn with its new piece.
     Promote {
         /// @brief The pawn entity.
         entity: Entity,
-        /// @brief What it becomes.
-        kind: PieceKind,
+        /// @brief The piece it becomes.
+        piece: Piece,
+        /// @brief Where it stands.
+        square: Square,
     },
 }
 
@@ -159,7 +161,11 @@ fn queue_moves(
         if let Some(kind) = mv.promotion {
             queue.steps.push_back(Step::Promote {
                 entity: mover,
-                kind,
+                piece: Piece {
+                    kind,
+                    color: mv.piece.color,
+                },
+                square: mv.to,
             });
         }
 
@@ -175,11 +181,10 @@ fn queue_moves(
 
 /// @brief Advances the front step; moves on to the next one when it finishes.
 fn play_animations(
-    mut commands: Commands,
     time: Res<Time>,
     mut queue: ResMut<AnimationQueue>,
     mut transforms: Query<&mut Transform>,
-    mut meshes: ResMut<Assets<Mesh>>,
+    mut spawner: PieceSpawner,
 ) {
     let Some(&step) = queue.steps.front() else {
         return;
@@ -223,16 +228,16 @@ fn play_animations(
                 transform.translation = from - Vec3::Y * CAPTURE_SINK * eased;
             }
             if t >= 1.0 {
-                commands.entity(entity).despawn();
+                spawner.commands.entity(entity).despawn();
             }
         }
-        Step::Promote { entity, kind } => {
-            let (mesh, height, rotation) = placeholder_shape(kind);
-            commands.entity(entity).insert(Mesh3d(meshes.add(mesh)));
-            if let Ok(mut transform) = transforms.get_mut(entity) {
-                transform.translation.y = height / 2.0;
-                transform.rotation = rotation;
-            }
+        Step::Promote {
+            entity,
+            piece,
+            square,
+        } => {
+            spawner.commands.entity(entity).despawn();
+            spawner.spawn(piece, square);
         }
     }
 

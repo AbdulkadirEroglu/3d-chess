@@ -2834,6 +2834,9 @@ dependencies = [
  "bevy",
  "chess_ai",
  "chess_core",
+ "ron",
+ "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

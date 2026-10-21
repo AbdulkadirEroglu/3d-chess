@@ -10,9 +10,8 @@ use chess_core::{CommandSource, Game, GameResult, Move, MoveCommand, PieceKind, 
 
 use crate::ai::AiPlayer;
 use crate::animation::AnimationQueue;
-use crate::board::BoardSquare;
+use crate::board::world_to_square;
 use crate::menu::AppState;
-use crate::pieces::PieceOnBoard;
 use crate::turn::{ActiveGame, GameSet, MoveCommandSent, NewGameRequested};
 use crate::ui::PromotionChoice;
 
@@ -46,8 +45,6 @@ pub struct Selection {
 /// @brief Reads left clicks on squares, pieces and promotion buttons and reacts to them.
 fn handle_clicks(
     mut clicks: MessageReader<PointerClick>,
-    squares: Query<&BoardSquare>,
-    pieces: Query<&PieceOnBoard>,
     choices: Query<&PromotionChoice>,
     game: Res<ActiveGame>,
     queue: Res<AnimationQueue>,
@@ -70,12 +67,8 @@ fn handle_clicks(
             }
             continue;
         }
-        // Clicking a piece counts as clicking the square it stands on.
-        let square = squares
-            .get(click.entity)
-            .map(|board_square| board_square.0)
-            .or_else(|_| pieces.get(click.entity).map(|on_board| on_board.square));
-        let Ok(square) = square else {
+        // The square under the clicked point: works for tiles, placeholders and any model.
+        let Some(square) = click.hit.position.and_then(world_to_square) else {
             continue;
         };
         if let Some(cmd) = on_square_clicked(&mut selection, &game.0, square) {

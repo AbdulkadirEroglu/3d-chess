@@ -140,9 +140,9 @@ Use the `tracing` macros: `error!`, `warn!`, `info!`, `debug!`, `trace!`. In the
 
 ## Assets
 
-- glTF binary (`.glb`), one per piece type per theme per quality tier, with the fixed animation names `idle`, `walk`, `attack`, `hit`, `die`.
+- Models follow `docs/ASSET_SPEC.md` (size, origin, facing, clips, tiers) and must pass `python3 scripts/check_asset.py <theme folder>`.
 - Author high, export down: follow the tier budgets in `TECH_STACK.md` §6. Code must never assume one specific tier is present beyond `high`.
-- Every new asset gets a line in `assets/CREDITS.md`: source, author, license. Never commit assets with unclear or non-redistributable licenses (e.g. raw Mixamo files).
+- Every new asset gets a line in `crates/game/assets/CREDITS.md`: source, author, license. Never commit assets with unclear or non-redistributable licenses (e.g. raw Mixamo files).
 - Binary assets go through Git LFS.
 
 ## Scope and workflow

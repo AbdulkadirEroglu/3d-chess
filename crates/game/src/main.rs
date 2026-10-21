@@ -8,6 +8,7 @@ mod camera;
 mod input;
 mod menu;
 mod pieces;
+mod theme;
 mod turn;
 mod ui;
 
@@ -57,6 +58,7 @@ fn main() {
             ui::UiPlugin,
             ai::AiPlugin,
             menu::MenuPlugin,
+            theme::ThemePlugin,
         ))
         .add_systems(Startup, log_startup)
         .run();

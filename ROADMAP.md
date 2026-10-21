@@ -55,11 +55,27 @@ Goal: it looks and feels like animated chess, playable by strangers.
 - [ ] Main menu, settings (graphics, audio, animation speed)
 - [ ] Sound effects and music
 - [ ] Undo / move history, save & load game (PGN)
-- [ ] Theme pack format defined (folder + manifest + fixed animation names)
+- [x] Theme pack format defined (folder + manifest + fixed animation names): `docs/ASSET_SPEC.md`, validator, loader
 - [ ] License chosen for code and assets; asset sources checked
 - [ ] GitHub releases with Linux builds, CI
 
 **Exit criteria:** external testers can download, play vs human or AI, and report bugs.
+
+#### Beta build order
+
+Code steps that don't need final art come first; the art checkpoint is a fixed stop.
+
+| # | Step | Needs final art? |
+|:-:|---|:-:|
+| 1 | Theme pack format, `docs/ASSET_SPEC.md`, model loader (placeholder fallback), asset validator, generated test theme | No |
+| 2 | Animation state machine: walk → attack → hit/die → settle, driven by the models' clips | No (test theme) |
+| 🛑 | **Art checkpoint: code development pauses.** The maintainer models, rigs and animates the stone pieces (Blender + local AI tools) with hands-on support: spec questions, Blender/rigging/animation help, validator runs, in-game checks. Resume when the stone theme passes the validator and looks right in game. | **Yes** |
+| 3 | Move history, undo, save & load (PGN) | No |
+| 4 | Settings menu (animation speed, graphics, volume), saved between runs | No |
+| 5 | Sound effects and music | No |
+| 6 | Stronger AI: transposition table, iterative deepening, time limit | No |
+| 7 | Capture debris: pre-fractured meshes + `avian3d` | Fracture meshes |
+| 8 | Release pipeline: tagged GitHub releases with Linux builds; asset license and credits | No |
 
 ### v1.0 — Full Linux release
 

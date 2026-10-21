@@ -65,9 +65,10 @@ A Cargo workspace. The rules and AI crates **do not depend on Bevy**. That keeps
 │           ├── camera/
 │           ├── audio/
 │           └── ui/
-├── assets/
-│   └── themes/
-│       └── placeholder/    # alpha; `stone/` arrives in beta
+├── crates/game/assets/     # Bevy's per-crate asset root; packaged builds put it next to the binary
+│   ├── CREDITS.md          # source + license of every asset
+│   └── themes/<name>/      # theme packs (see docs/ASSET_SPEC.md); `test/` is generated, git-ignored
+├── scripts/                # ci.sh, make_test_theme.py, check_asset.py
 └── docs/                   # design notes, ADRs (docs/adr/NNNN-title.md)
 ```
 
@@ -182,7 +183,7 @@ Rule: `chess_core` and `chess_ai` carry the bulk of the tests. The `game` crate 
 - **Animation names (fixed contract):** `idle`, `walk`, `attack`, `hit`, `die`. Optional extras are prefixed per piece (e.g. `knight_jump`).
 - **Textures:** PNG while developing; KTX2/Basis compression before Android.
 - **AI-generated content:** check each tool's model license (some restrict commercial use or regions), and record it in `assets/CREDITS.md`. Steam requires disclosing AI-generated content on the store page.
-- **Theme pack:** `assets/themes/<name>/theme.ron` manifest plus the `.glb` and texture files. The game never hardcodes asset paths outside the theme loader.
+- **Theme pack:** `crates/game/assets/themes/<name>/theme.ron` manifest plus one `.glb` per piece per color. The game never hardcodes asset paths outside the theme loader. Full rules: `docs/ASSET_SPEC.md`; check with `scripts/check_asset.py`.
 - **Repository:** exported binary assets go in **Git LFS** from the first real asset. High-res sources (`.blend`, sculpts, 4K textures) are large; keep them in a separate assets repo or storage, not in the code repo, to stay within GitHub's LFS quota.
 
 ## 7. Platform targets

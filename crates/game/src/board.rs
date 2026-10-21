@@ -54,10 +54,6 @@ impl Plugin for BoardPlugin {
     }
 }
 
-/// @brief Marks a tile entity with the square it represents. Clicks on it select that square.
-#[derive(Component, Debug)]
-pub struct BoardSquare(pub Square);
-
 /// @brief Marks a highlight marker, so the old ones can be removed.
 #[derive(Component)]
 struct Highlight;
@@ -85,6 +81,18 @@ pub fn square_to_world(square: Square) -> Vec3 {
     )
 }
 
+/// @brief The square under a world position, ignoring height. None when it's off the board.
+/// @note Inverse of `square_to_world`; input uses it to turn any clicked point into a square.
+pub fn world_to_square(position: Vec3) -> Option<Square> {
+    let file = (position.x / SQUARE_SIZE + 4.0).floor();
+    let rank = (4.0 - position.z / SQUARE_SIZE).floor();
+    if !(0.0..8.0).contains(&file) || !(0.0..8.0).contains(&rank) {
+        return None;
+    }
+    // Both are whole numbers in 0..8 here, so the casts are exact.
+    Square::new(file as u8, rank as u8)
+}
+
 /// @brief Spawns the 64 square tiles and the base slab under them.
 fn spawn_board(
     mut commands: Commands,
@@ -109,7 +117,6 @@ fn spawn_board(
         };
         commands.spawn((
             Name::new(format!("Square {square}")),
-            BoardSquare(square),
             Mesh3d(tile.clone()),
             MeshMaterial3d(material),
             Transform::from_translation(square_to_world(square) - Vec3::Y * TILE_HEIGHT / 2.0),
@@ -205,5 +212,27 @@ fn show_highlights(
             // Markers must not catch clicks meant for the square or piece below.
             Pickable::IGNORE,
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// @brief Any point within a square maps back to that square; points off the board map to nothing.
+    #[test]
+    fn world_positions_map_to_squares() {
+        for square in (0..64).filter_map(Square::from_index) {
+            let center = square_to_world(square);
+            for offset in [
+                Vec3::ZERO,
+                Vec3::new(0.45, 0.8, -0.45),
+                Vec3::new(-0.45, 0.0, 0.45),
+            ] {
+                assert_eq!(world_to_square(center + offset * SQUARE_SIZE), Some(square));
+            }
+        }
+        assert_eq!(world_to_square(Vec3::new(4.2, 0.0, 0.0)), None);
+        assert_eq!(world_to_square(Vec3::new(0.0, 0.0, -4.2)), None);
     }
 }
