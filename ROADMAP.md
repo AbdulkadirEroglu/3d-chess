@@ -67,6 +67,7 @@ Goal: polished, stable, the baseline feature set is complete.
 - [ ] Capture animations varied per attacker / defender pair (at least per attacker type)
 - [ ] Cinematic camera during captures (toggleable)
 - [ ] Polished UI, accessibility basics (rebindable keys, scalable UI, colorblind-safe highlights)
+- [ ] Own move generator in `chess_core` replaces `cozy-chess` (same API; verified by perft + differential tests against `cozy-chess`)
 - [ ] Stronger AI; optional Stockfish as a separate process over UCI on desktop (never linked, see `TECH_STACK.md`)
 - [ ] Packaging: AppImage and/or Flatpak
 

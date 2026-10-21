@@ -13,7 +13,7 @@ Changing anything here is a decision, not a side effect: update this file in the
 |---|---|---|---|
 | Language | Rust, edition 2024 | toolchain `1.98` | Pinned in `rust-toolchain.toml` |
 | Engine | Bevy | `0.20` | Released 2026-10-08. MSRV 1.97.1 |
-| Chess rules | `cozy-chess` | `0.3` | MIT. Fast bitboard move gen, made for engines |
+| Chess rules | `cozy-chess` → own implementation | `0.3` | MIT. Used in alpha/beta behind `chess_core`; replaced by our own move generator before v1.0 |
 | Code license | `MIT OR Apache-2.0` | — | Same as Bevy |
 | Asset license | CC-BY-4.0 for our own assets (proposed) | — | Third-party assets listed in `assets/CREDITS.md` |
 
@@ -23,6 +23,15 @@ Changing anything here is a decision, not a side effect: update this file in the
 - the **Apple App Store** terms (iOS milestone).
 
 `cozy-chess` covers legal move generation, check/mate detection, castling, en passant, promotion and Zobrist hashing. We write the small missing pieces ourselves in `chess_core`: SAN, PGN, and draw rules (50-move, threefold, insufficient material).
+
+### Plan: our own rules engine before v1.0
+`cozy-chess` is a stepping stone, not a permanent dependency.
+- The rest of the code only talks to the `chess_core` API (`Game`, `Square`, `Move`, `MoveCommand`, ...). `cozy-chess` types never leak out of `chess_core`.
+- Before v1.0 we write our own legal move generator behind that same API. Start with the simplest correct design (e.g. a plain 8×8 array with pseudo-legal moves plus a "does this leave my king in check" filter); only optimize if the AI needs it.
+- Correctness is proven by:
+  - the **perft suite** (standard positions with known node counts), and
+  - **differential tests**: play thousands of random games and assert that our legal-move list equals `cozy-chess`'s in every position.
+- After the swap, `cozy-chess` stays as a **dev-dependency** for those tests only.
 
 ### License policy
 - **No GPL, AGPL or LGPL dependencies.** `cargo-deny` enforces this in CI.
@@ -98,7 +107,8 @@ Planned later crates: `voice` (the `SpeechRecognizer` trait and its backends) an
 | Input mapping (mouse, keys, later gamepad and touch) | `leafwing-input-manager` | `0.22` | MIT/Apache |
 | Errors (library crates) | `thiserror` | `2` | MIT/Apache |
 | Errors (binaries and tools only) | `anyhow` | `1` | MIT/Apache |
-| Logging | Bevy's `tracing` integration (`bevy::log`) | — | — |
+| Logging (`game`) | Bevy's `tracing` integration (`bevy::log`) | — | — |
+| Logging (`chess_core`, `chess_ai`) | `tracing` | `0.1` | MIT |
 | Config / manifests | `serde` + `ron` | `1` / `0.12` | MIT/Apache |
 | Dev UI (debug panels, inspector) | `bevy_egui` | `0.43` | MIT |
 
@@ -146,13 +156,28 @@ Rule: `chess_core` and `chess_ai` carry the bulk of the tests. The `game` crate 
 
 ## 6. Assets pipeline
 
-- **Authoring:** Blender. Meshes may start from AI 3D-gen tools, but get cleaned up and retopologized before rigging.
-- **Format:** glTF 2.0 binary (`.glb`). One file per piece type per theme.
+**Principle: author high, export down.** Source assets are made at the highest quality; every platform gets an export derived from them. Quality can always go down later, never up.
+
+- **Workflow:** model the base form in Blender, then use local AI tools for detail and texturing, then clean up in Blender.
+- **Source assets** (kept, never shipped directly):
+  - high-poly sculpt (any polycount) for detail,
+  - textures at **4096²**, PBR set: base color, normal, roughness/metallic, AO.
+- **Game mesh:** a clean, retopologized mesh that gets rigged and animated. Detail from the sculpt is **baked into normal maps**. Don't decimate a rigged mesh to make lower tiers; it breaks deformation. Each tier is its own clean mesh.
+- **Export tiers** (one `.glb` per tier, same rig and animations):
+
+  | Tier | Triangles per piece | Textures | Target |
+  |---|---|---|---|
+  | `high` | ≤ 50k | 2048²–4096² | Desktop high settings |
+  | `medium` | ≤ 20k | 1024²–2048² | Desktop low, Steam Deck |
+  | `low` | ≤ 8k | 512²–1024² | Mobile |
+
+  Alpha needs no tiers (placeholders). Beta ships `high` and `medium`; `low` comes with Android.
+- **Format:** glTF 2.0 binary (`.glb`). One file per piece type per theme per tier.
 - **Animation names (fixed contract):** `idle`, `walk`, `attack`, `hit`, `die`. Optional extras are prefixed per piece (e.g. `knight_jump`).
-- **Budgets (mobile-aware):** ≤ 15k triangles per piece, 1024² textures by default (2048² max on desktop), at most 1 skinned mesh per piece.
 - **Textures:** PNG while developing; KTX2/Basis compression before Android.
+- **AI-generated content:** check each tool's model license (some restrict commercial use or regions), and record it in `assets/CREDITS.md`. Steam requires disclosing AI-generated content on the store page.
 - **Theme pack:** `assets/themes/<name>/theme.ron` manifest plus the `.glb` and texture files. The game never hardcodes asset paths outside the theme loader.
-- **Repository:** binary assets go in **Git LFS** from the first real asset. Watch GitHub's LFS bandwidth quota; move source `.blend` files out of the repo if it becomes an issue.
+- **Repository:** exported binary assets go in **Git LFS** from the first real asset. High-res sources (`.blend`, sculpts, 4K textures) are large; keep them in a separate assets repo or storage, not in the code repo, to stay within GitHub's LFS quota.
 
 ## 7. Platform targets
 

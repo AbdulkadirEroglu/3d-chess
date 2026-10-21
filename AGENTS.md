@@ -11,6 +11,14 @@ Before working, read:
 - `TECH_STACK.md`: the approved crates, versions, layout and policies.
 - `docs/adr/`: past architecture decisions, if any.
 
+## Working principles
+
+- **Simplest solution first.** Always look for the most basic solution that correctly solves the problem. Don't add abstractions, generics, traits, config options or "future-proofing" that the current task doesn't need. Complexity has to justify itself; when in doubt, leave it out.
+- **One function over many helpers.** If something can be solved clearly in a single function, write a single function. Don't split it into helper functions, wrapper types or extra structs just for structure. Extract a helper only when the same logic is genuinely reused, or the function becomes hard to follow.
+- **Document as you go.** Comments are simple, short and easy to understand (see *Comments* below). When behavior, architecture or workflow changes, update the matching doc (`ROADMAP.md`, `TECH_STACK.md`, `AGENTS.md`, `docs/`) in the same change.
+- **Always log.** Every feature logs what it does (see *Logging* below).
+- **Never commit.** The maintainer makes all commits. Don't run `git commit`, `git push`, `git rebase`, `git merge` or anything that rewrites history. If changes really have to be set aside, use `git stash push -m "<what and why>"` and tell the maintainer clearly that there are stashed changes waiting to be reviewed and committed.
+
 ## Commands
 
 ```sh
@@ -36,6 +44,44 @@ Before saying a task is done, run `cargo fmt --all`, `cargo clippy --workspace -
 7. **The AI runs off the main thread** (Bevy `AsyncComputeTaskPool`) and must never stall a frame.
 8. **Platform-specific code** (Steam, voice backends, mobile) sits behind Cargo features and traits, never as `cfg` scattered through gameplay code.
 
+## Comments (Doxygen style)
+
+Use Doxygen tags inside Rust's normal doc comments, `//!` for files and `///` for items, so `cargo doc` still works. Keep them short: one line for `@brief`, a few words per tag.
+
+File header, at the top of every source file:
+```rust
+//! @file board.rs
+//! @brief Spawns the 3D board and highlights squares.
+```
+
+Functions, structs, enums and their fields:
+```rust
+/// @brief Checks a move and applies it to the game.
+/// @param game Current game state.
+/// @param cmd Move requested by a player, the AI or the network.
+/// @return The applied move, or why it was rejected.
+pub fn apply_command(game: &mut Game, cmd: MoveCommand) -> Result<Move, MoveError> {
+```
+
+- Every function gets a `@brief`, private ones too. Add `@param` / `@return` when they aren't obvious from the name. Use `@note` for a non-obvious *why*, and `@warning` for traps.
+- Inline `//` comments go on lines that need explaining, not on every line. They describe *why*, not *what*.
+
+## Logging
+
+Use the `tracing` macros: `error!`, `warn!`, `info!`, `debug!`, `trace!`. In the `game` crate they come from `bevy::log`; in `chess_core` and `chess_ai` they come from the `tracing` crate directly.
+
+| Level | Use for | Examples |
+|---|---|---|
+| `error!` | Something failed and the game can't do what was asked | Theme pack failed to load, save file corrupt |
+| `warn!` | Unexpected but recovered | Missing animation, fallback used; illegal move rejected |
+| `info!` | Important, infrequent events | Game started or ended, move played, mode or theme changed, AI chose a move |
+| `debug!` | **Simple and repeated events.** Hidden by default, so normal output stays clean | Piece selected, legal-move highlights updated, animation step started or finished, input received |
+| `trace!` | Very detailed internals | AI search per depth, per-system internals |
+
+- Log with context: `info!(?cmd, "move played")`, not `info!("move played")`.
+- **Never log per frame**, and never inside hot loops (move generation, AI search nodes). Log once around them instead, e.g. "search done: depth 6, 120k nodes, 85 ms".
+- Default filter: `info` in release and `debug` in dev builds; override with `RUST_LOG` (e.g. `RUST_LOG=game=debug,chess_ai=trace`).
+
 ## Bevy conventions
 
 - **Use the Bevy 0.20 API.** Bevy changes a lot between versions, and your training data likely includes older APIs, for example the event/message changes, the bundle-to-required-components move, and picking now being built in. When unsure, check docs.rs for `bevy` 0.20 or the official migration guides. Don't guess.
@@ -50,8 +96,7 @@ Before saying a task is done, run `cargo fmt --all`, `cargo clippy --workspace -
 - Edition 2024, toolchain pinned in `rust-toolchain.toml`.
 - Library crates use `thiserror` error types; `anyhow` is only for binaries and tools.
 - No `unsafe` without a `// SAFETY:` comment and a reason it's needed.
-- Public items in `chess_core` and `chess_ai` get doc comments.
-- Prefer clear code over clever code. Comment the *why*, not the *what*.
+- Prefer clear code over clever code.
 - Don't leave dead code, commented-out code or `TODO`s without an issue or roadmap reference.
 
 ## Dependencies
@@ -63,23 +108,24 @@ Before saying a task is done, run `cargo fmt --all`, `cargo clippy --workspace -
 
 ## Testing
 
-- Any change to `chess_core` comes with tests. Move generation must keep passing the perft suite.
+- Any change to `chess_core` comes with tests. Move generation must keep passing the perft suite and, once our own move generator exists, the differential tests against `cozy-chess`.
+- Outside `chess_core`, never use `cozy-chess` types directly; it will be replaced before v1.0.
 - AI changes: keep search deterministic for a given position and settings, so tests can rely on it. Run the `criterion` benchmarks when touching search performance and report the before/after numbers.
 - Bugs get a regression test that fails before the fix.
 - Test `game` crate logic (turn flow, command handling) with a headless `App`. Don't test rendering.
 
 ## Assets
 
-- glTF binary (`.glb`), one per piece type per theme, with the fixed animation names `idle`, `walk`, `attack`, `hit`, `die`.
-- Budget: ≤ 15k triangles per piece, 1024² textures by default.
+- glTF binary (`.glb`), one per piece type per theme per quality tier, with the fixed animation names `idle`, `walk`, `attack`, `hit`, `die`.
+- Author high, export down: follow the tier budgets in `TECH_STACK.md` §6. Code must never assume one specific tier is present beyond `high`.
 - Every new asset gets a line in `assets/CREDITS.md`: source, author, license. Never commit assets with unclear or non-redistributable licenses (e.g. raw Mixamo files).
 - Binary assets go through Git LFS.
 
 ## Scope and workflow
 
 - Stay inside the current milestone. If you notice a good idea outside it, add it to `ROADMAP.md` (the backlog or the right track) instead of building it.
-- Make small, focused changes; one concern per commit or PR.
-- Commit messages use the imperative mood, with an optional scope prefix: `core: add threefold repetition`, `game: animate knight jump`.
+- Make small, focused changes, one concern at a time, so the maintainer can review and commit them easily.
+- When you finish, suggest a commit message (imperative mood, optional scope prefix, e.g. `core: add threefold repetition`), but don't commit.
 - Significant architectural decisions get a short ADR in `docs/adr/NNNN-title.md`: context, decision, consequences.
 - If a request conflicts with these rules or the tech stack, stop and point out the conflict. Don't work around it.
 
