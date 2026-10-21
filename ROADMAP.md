@@ -47,8 +47,8 @@ Goal: it looks and feels like animated chess, playable by strangers.
   - [ ] 6 piece models × 2 colors, rigged
   - [ ] Standard animation set: `idle`, `walk`, `attack`, `hit`, `die`
   - [ ] Pre-fractured meshes / debris for captures
-- [ ] Animation state machine: walk → attack → defender dies → attacker settles → next turn
-- [ ] Piece-specific movement (knight jumps, rook slides, etc.)
+- [x] Animation state machine: walk → attack → defender dies → attacker settles → next turn (clips via `clips.rs`; pieces face their path)
+- [ ] Piece-specific movement (knight hop done; per-piece walk styles come with the stone models)
 - [x] AI difficulty levels: Easy / Medium / Hard (pulled into alpha)
 - [ ] Stronger search (transposition table, iterative deepening)
 - [x] Promotion choice UI (pulled into alpha)

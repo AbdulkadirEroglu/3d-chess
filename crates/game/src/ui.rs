@@ -193,7 +193,7 @@ fn update_ui(
     let status_line = if in_menu {
         String::new()
     } else {
-        status_text(&game.0, ai.side)
+        status_text(&game.0, &ai)
     };
     for mut text in &mut status {
         if text.0 != status_line {
@@ -243,12 +243,12 @@ pub fn set_visible<F: bevy::ecs::query::QueryFilter>(
 }
 
 /// @brief Status line: whose turn it is, whether that's the AI, and whether they're in check.
-fn status_text(game: &Game, ai_side: Option<Side>) -> String {
+fn status_text(game: &Game, ai: &AiPlayer) -> String {
     if game.result() != GameResult::Ongoing {
         return "Game over".to_string();
     }
     let mover = game.side_to_move();
-    let side = if ai_side == Some(mover) {
+    let side = if ai.plays(mover) {
         format!("{} (AI)", side_name(mover))
     } else {
         side_name(mover).to_string()
@@ -289,6 +289,15 @@ mod tests {
 
     use super::*;
 
+    /// @brief Two human players, no AI.
+    fn humans() -> AiPlayer {
+        AiPlayer {
+            white: false,
+            black: false,
+            depth: 1,
+        }
+    }
+
     /// @brief Plays moves like "e2e4" on a game.
     fn play(game: &mut Game, moves: &[&str]) {
         for mv in moves {
@@ -306,11 +315,11 @@ mod tests {
     #[test]
     fn status_follows_turn_and_check() {
         let mut game = Game::new();
-        assert_eq!(status_text(&game, None), "White to move");
+        assert_eq!(status_text(&game, &humans()), "White to move");
         play(&mut game, &["e2e4", "f7f6", "d1h5"]);
-        assert_eq!(status_text(&game, None), "Black to move - check!");
+        assert_eq!(status_text(&game, &humans()), "Black to move - check!");
         assert_eq!(
-            status_text(&game, Some(Side::Black)),
+            status_text(&game, &AiPlayer::default()),
             "Black (AI) to move - check!"
         );
     }
@@ -321,7 +330,7 @@ mod tests {
         let mut game = Game::new();
         assert_eq!(banner_message(game.result()), None);
         play(&mut game, &["f2f3", "e7e5", "g2g4", "d8h4"]);
-        assert_eq!(status_text(&game, None), "Game over");
+        assert_eq!(status_text(&game, &humans()), "Game over");
         assert_eq!(
             banner_message(game.result()).as_deref(),
             Some("Checkmate - Black wins\nPress R to play again, Esc for the menu")

@@ -31,12 +31,14 @@ impl Plugin for AiPlugin {
     }
 }
 
-/// @brief Which side the AI plays, and how deep it searches.
+/// @brief Which sides the AI plays (none, one, or both in demo mode), and how deep it searches.
 /// @note Set by the menu's Start button; Black by default.
 #[derive(Resource, Debug)]
 pub struct AiPlayer {
-    /// @brief The AI's side; None for two human players.
-    pub side: Option<Side>,
+    /// @brief The AI plays White.
+    pub white: bool,
+    /// @brief The AI plays Black.
+    pub black: bool,
     /// @brief Search depth in plies.
     pub depth: u32,
 }
@@ -44,8 +46,19 @@ pub struct AiPlayer {
 impl Default for AiPlayer {
     fn default() -> Self {
         Self {
-            side: Some(Side::Black),
+            white: false,
+            black: true,
             depth: AI_DEPTH,
+        }
+    }
+}
+
+impl AiPlayer {
+    /// @brief True if the AI plays this side.
+    pub fn plays(&self, side: Side) -> bool {
+        match side {
+            Side::White => self.white,
+            Side::Black => self.black,
         }
     }
 }
@@ -68,8 +81,7 @@ fn start_ai_turn(
     queue: Res<AnimationQueue>,
     mut thinking: ResMut<AiThinking>,
 ) {
-    let ai_to_move =
-        ai.side == Some(game.0.side_to_move()) && game.0.result() == GameResult::Ongoing;
+    let ai_to_move = ai.plays(game.0.side_to_move()) && game.0.result() == GameResult::Ongoing;
     if !ai_to_move || queue.is_busy() || thinking.0.is_some() {
         return;
     }

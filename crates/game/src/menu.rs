@@ -30,6 +30,9 @@ const HINT_COLOR: Color = Color::srgb(0.65, 0.62, 0.58);
 /// @brief Background of the selected option, and of the Start button: gold.
 const SELECTED_BACKGROUND: Color = Color::srgb(0.62, 0.46, 0.18);
 
+/// @brief Dev demo switch: `CHESS_DEMO=1` skips the menu and lets the AI play both sides.
+const DEMO_ENV: &str = "CHESS_DEMO";
+
 /// @brief Width of the row labels, so the buttons line up.
 const LABEL_WIDTH: f32 = 130.0;
 
@@ -40,7 +43,7 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
             .init_resource::<MatchSettings>()
-            .add_systems(Startup, spawn_menu)
+            .add_systems(Startup, (spawn_menu, start_demo_if_requested))
             .add_systems(
                 Update,
                 (
@@ -245,6 +248,26 @@ fn handle_menu_clicks(
     }
 }
 
+/// @brief Dev demo: with `CHESS_DEMO` set, skips the menu and starts an AI-vs-AI game.
+/// @note For watching animations, soak-testing whole games, and recording footage.
+fn start_demo_if_requested(
+    mut ai: ResMut<AiPlayer>,
+    mut requests: MessageWriter<NewGameRequested>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    if std::env::var_os(DEMO_ENV).is_none() {
+        return;
+    }
+    *ai = AiPlayer {
+        white: true,
+        black: true,
+        depth: AiLevel::Medium.depth(),
+    };
+    info!("demo mode: the AI plays both sides");
+    requests.write(NewGameRequested);
+    next_state.set(AppState::Playing);
+}
+
 /// @brief Esc during a game opens the menu; the game waits behind it until Start begins a new one.
 fn open_menu_on_escape(
     keys: Res<ButtonInput<KeyCode>>,
@@ -308,7 +331,8 @@ fn is_highlighted(settings: &MatchSettings, button: MenuButton) -> bool {
 /// @brief The AI setup for a match: the side opposite the human, or no AI for two humans.
 fn ai_player_for(settings: &MatchSettings) -> AiPlayer {
     AiPlayer {
-        side: settings.vs_ai.then(|| settings.human_side.opponent()),
+        white: settings.vs_ai && settings.human_side == Side::Black,
+        black: settings.vs_ai && settings.human_side == Side::White,
         depth: settings.ai_level.depth(),
     }
 }
@@ -339,9 +363,10 @@ mod tests {
             ai_level: AiLevel::Hard,
         };
         let ai = ai_player_for(&settings);
-        assert_eq!((ai.side, ai.depth), (Some(Side::White), 4));
+        assert_eq!((ai.white, ai.black, ai.depth), (true, false, 4));
 
         settings.vs_ai = false;
-        assert_eq!(ai_player_for(&settings).side, None);
+        let ai = ai_player_for(&settings);
+        assert!(!ai.white && !ai.black);
     }
 }

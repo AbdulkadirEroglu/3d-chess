@@ -5,6 +5,7 @@ mod ai;
 mod animation;
 mod board;
 mod camera;
+mod clips;
 mod input;
 mod menu;
 mod pieces;
@@ -55,6 +56,7 @@ fn main() {
             pieces::PiecesPlugin,
             input::InputPlugin,
             animation::AnimationPlugin,
+            clips::ClipsPlugin,
             ui::UiPlugin,
             ai::AiPlugin,
             menu::MenuPlugin,

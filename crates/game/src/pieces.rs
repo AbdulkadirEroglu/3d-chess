@@ -4,7 +4,7 @@
 use std::f32::consts::{FRAC_PI_2, PI};
 
 use bevy::ecs::system::SystemParam;
-use bevy::gltf::GltfAssetLabel;
+use bevy::gltf::{Gltf, GltfAssetLabel};
 use bevy::prelude::*;
 use bevy::world_serialization::WorldAssetRoot;
 use chess_core::{Color as Side, Piece, PieceKind, Square};
@@ -38,6 +38,20 @@ pub struct PieceOnBoard {
     pub piece: Piece,
     /// @brief Current square.
     pub square: Square,
+}
+
+/// @brief Marks a piece shown by a theme model; holds the model file so its clips can be found.
+#[derive(Component, Debug)]
+pub struct PieceModel(pub Handle<Gltf>);
+
+/// @brief Rotation that makes a piece face its opponent.
+/// @note Models face +Z, i.e. Blender's Front view (see docs/ASSET_SPEC.md). That's toward White's
+///       side, so Black's pieces already face their opponent and White's are turned around.
+pub fn army_facing(color: Side) -> Quat {
+    match color {
+        Side::White => Quat::from_rotation_y(PI),
+        Side::Black => Quat::IDENTITY,
+    }
 }
 
 /// @brief Shared placeholder materials, one per side.
@@ -84,18 +98,14 @@ pub struct PieceSpawner<'w, 's> {
 
 impl PieceSpawner<'_, '_> {
     /// @brief Spawns a piece standing on its square, facing the opponent.
-    /// @note Models face +Z, i.e. Blender's Front view (see docs/ASSET_SPEC.md). That's toward White's
-    ///       side, so Black's pieces already face their opponent and White's are turned around.
     pub fn spawn(&mut self, piece: Piece, square: Square) -> Entity {
-        let facing = match piece.color {
-            Side::White => Quat::from_rotation_y(PI),
-            Side::Black => Quat::IDENTITY,
-        };
+        let facing = army_facing(piece.color);
         let name = Name::new(format!("{:?} {:?} {square}", piece.color, piece.kind));
         let marker = PieceOnBoard { piece, square };
         let ground = square_to_world(square);
 
         if let Some(path) = self.theme.model_path(piece) {
+            let gltf = self.asset_server.load::<Gltf>(path.clone());
             let model = self
                 .asset_server
                 .load(GltfAssetLabel::Scene(0).from_asset(path));
@@ -105,12 +115,13 @@ impl PieceSpawner<'_, '_> {
                     name,
                     marker,
                     WorldAssetRoot(model),
+                    PieceModel(gltf),
                     Transform::from_translation(ground).with_rotation(facing),
                 ))
                 .id();
         }
 
-        let (mesh, height, rotation) = placeholder_shape(piece.kind);
+        let (mesh, height) = placeholder_shape(piece.kind);
         let material = match piece.color {
             Side::White => self.materials.white.clone(),
             Side::Black => self.materials.black.clone(),
@@ -122,31 +133,25 @@ impl PieceSpawner<'_, '_> {
                 marker,
                 Mesh3d(self.meshes.add(mesh)),
                 MeshMaterial3d(material),
-                Transform::from_translation(ground + Vec3::Y * height / 2.0)
-                    .with_rotation(facing * rotation),
+                Transform::from_translation(ground + Vec3::Y * height / 2.0).with_rotation(facing),
             ))
             .id()
     }
 }
 
-/// @brief Placeholder mesh for a piece kind, its height, and its rotation.
-/// @note The knight's ring is stood upright so it faces the players.
-fn placeholder_shape(kind: PieceKind) -> (Mesh, f32, Quat) {
+/// @brief Placeholder mesh for a piece kind and its height.
+/// @note The knight's ring is stood upright inside the mesh, so the entity's rotation is only its facing.
+fn placeholder_shape(kind: PieceKind) -> (Mesh, f32) {
     match kind {
-        PieceKind::Pawn => (Mesh::from(Sphere::new(0.2)), 0.4, Quat::IDENTITY),
+        PieceKind::Pawn => (Mesh::from(Sphere::new(0.2)), 0.4),
         PieceKind::Knight => (
-            Mesh::from(Torus::new(0.12, 0.28)),
+            Mesh::from(Torus::new(0.12, 0.28)).rotated_by(Quat::from_rotation_x(FRAC_PI_2)),
             0.56,
-            Quat::from_rotation_x(FRAC_PI_2),
         ),
-        PieceKind::Bishop => (Mesh::from(Cone::new(0.25, 0.75)), 0.75, Quat::IDENTITY),
-        PieceKind::Rook => (Mesh::from(Cylinder::new(0.28, 0.55)), 0.55, Quat::IDENTITY),
-        PieceKind::Queen => (Mesh::from(Capsule3d::new(0.22, 0.5)), 0.94, Quat::IDENTITY),
-        PieceKind::King => (
-            Mesh::from(Cuboid::new(0.36, 1.05, 0.36)),
-            1.05,
-            Quat::IDENTITY,
-        ),
+        PieceKind::Bishop => (Mesh::from(Cone::new(0.25, 0.75)), 0.75),
+        PieceKind::Rook => (Mesh::from(Cylinder::new(0.28, 0.55)), 0.55),
+        PieceKind::Queen => (Mesh::from(Capsule3d::new(0.22, 0.5)), 0.94),
+        PieceKind::King => (Mesh::from(Cuboid::new(0.36, 1.05, 0.36)), 1.05),
     }
 }
 

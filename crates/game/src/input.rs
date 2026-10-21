@@ -53,7 +53,7 @@ fn handle_clicks(
     mut sent: MessageWriter<MoveCommandSent>,
 ) {
     // The board is locked while pieces move and while the AI has the turn.
-    if queue.is_busy() || ai.side == Some(game.0.side_to_move()) {
+    if queue.is_busy() || ai.plays(game.0.side_to_move()) {
         clicks.clear();
         return;
     }

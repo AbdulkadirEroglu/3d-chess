@@ -147,6 +147,7 @@ The Rust toolchain is pinned in `rust-toolchain.toml`; `rustup` installs the rig
 |---|---|
 | **Run all CI checks locally** | `./scripts/ci.sh` |
 | Run (fast rebuilds) | `cargo run -p game --features bevy/dynamic_linking` |
+| Watch the AI play itself (animation check, soak test) | `CHESS_DEMO=1 cargo run -p game` |
 | Play with a theme pack | `CHESS_THEME=test cargo run -p game` (generate it first: `python3 scripts/make_test_theme.py`) |
 | Check models against the spec | `python3 scripts/check_asset.py crates/game/assets/themes/<name>` |
 | Verbose logs | `RUST_LOG=game=debug,chess_ai=trace cargo run -p game` |

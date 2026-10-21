@@ -1,6 +1,8 @@
 //! @file animation.rs
-//! @brief The animation queue: plays applied moves as visual steps (slide, capture, promotion), one at a time.
+//! @brief The animation queue: plays applied moves as visual steps, one at a time.
+//!        A capture plays as: walk up to the victim → attack → victim hit → victim dies → walk onto the square.
 //! @note Visual only. The rules have already changed when a step plays; steps never touch game state.
+//!       Pieces without clips (placeholders) skip the clip steps and shrink away when captured.
 
 use std::collections::VecDeque;
 use std::f32::consts::PI;
@@ -8,21 +10,37 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 use chess_core::{Piece, PieceKind, Square};
 
-use crate::board::square_to_world;
-use crate::pieces::{PieceOnBoard, PieceSpawner};
+use crate::board::{SQUARE_SIZE, square_to_world};
+use crate::clips::{Clip, ClipPlayer};
+use crate::pieces::{PieceOnBoard, PieceSpawner, army_facing};
 use crate::turn::{GameSet, GameStarted, MovePlayed};
 
-/// @brief Seconds for a piece to slide to its square.
-const SLIDE_SECONDS: f32 = 0.45;
+/// @brief Walking speed in squares per second.
+const WALK_SPEED: f32 = 2.5;
 
-/// @brief Seconds for a captured piece to shrink away.
-const CAPTURE_SECONDS: f32 = 0.35;
+/// @brief Shortest walk, so one-square moves don't look rushed.
+const MIN_WALK_SECONDS: f32 = 0.3;
+
+/// @brief How far short of its victim an attacker stops, in squares.
+const ATTACK_GAP: f32 = 0.6;
+
+/// @brief Seconds for the attack clip.
+const ATTACK_SECONDS: f32 = 0.6;
+
+/// @brief Seconds for the hit clip.
+const HIT_SECONDS: f32 = 0.35;
+
+/// @brief Seconds for the die clip before the piece is removed.
+const DIE_SECONDS: f32 = 0.9;
+
+/// @brief Seconds for a placeholder (no clips) to shrink away when captured.
+const SHRINK_SECONDS: f32 = 0.35;
+
+/// @brief How far a shrinking placeholder sinks.
+const SHRINK_SINK: f32 = 0.4;
 
 /// @brief Peak height of a knight's hop.
 const KNIGHT_JUMP_HEIGHT: f32 = 0.8;
-
-/// @brief How far a captured piece sinks while it shrinks.
-const CAPTURE_SINK: f32 = 0.4;
 
 /// @brief Queues steps for every played move and plays them.
 pub struct AnimationPlugin;
@@ -57,18 +75,31 @@ impl AnimationQueue {
 /// @brief One visual step.
 #[derive(Clone, Copy, Debug)]
 enum Step {
-    /// @brief Move a piece between two points; knights hop.
-    Slide {
+    /// @brief Walk a piece between two points, facing the way it goes; knights hop.
+    Walk {
         /// @brief The piece entity.
         entity: Entity,
         /// @brief Start position.
         from: Vec3,
         /// @brief End position.
         to: Vec3,
-        /// @brief Arc through the air instead of gliding.
+        /// @brief Arc through the air instead of walking.
         jump: bool,
+        /// @brief How long the walk takes.
+        seconds: f32,
+        /// @brief Facing to settle into at the end (back toward the opponent); None keeps facing the path.
+        settle: Option<Quat>,
     },
-    /// @brief Shrink and sink a captured piece, then remove it.
+    /// @brief Play a one-shot clip (attack, hit) on a piece; skipped if the piece has no such clip.
+    Act {
+        /// @brief The piece entity.
+        entity: Entity,
+        /// @brief The clip.
+        clip: Clip,
+        /// @brief How long to wait for it.
+        seconds: f32,
+    },
+    /// @brief A captured piece dies (or shrinks, without clips), then is removed.
     Capture {
         /// @brief The captured piece entity.
         entity: Entity,
@@ -84,6 +115,44 @@ enum Step {
         /// @brief Where it stands.
         square: Square,
     },
+}
+
+impl Step {
+    /// @brief How long the step plays. Clip steps take no time on pieces without that clip.
+    fn duration(self, clips: &ClipPlayer) -> f32 {
+        match self {
+            Step::Walk { seconds, .. } => seconds,
+            Step::Act {
+                entity,
+                clip,
+                seconds,
+            } if clips.has(entity, clip) => seconds,
+            Step::Act { .. } | Step::Promote { .. } => 0.0,
+            Step::Capture { entity, .. } if clips.has(entity, Clip::Die) => DIE_SECONDS,
+            Step::Capture { .. } => SHRINK_SECONDS,
+        }
+    }
+}
+
+/// @brief A walk step between two points, timed by distance.
+fn walk(entity: Entity, from: Vec3, to: Vec3, jump: bool, settle: Option<Quat>) -> Step {
+    let squares = from.distance(to) / SQUARE_SIZE;
+    Step::Walk {
+        entity,
+        from,
+        to,
+        jump,
+        seconds: (squares / WALK_SPEED).max(MIN_WALK_SECONDS),
+        settle,
+    }
+}
+
+/// @brief Where an attacker stops: just short of its victim, on the line from its start.
+fn approach_point(from: Vec3, victim: Vec3) -> Vec3 {
+    let gap = ATTACK_GAP * SQUARE_SIZE;
+    let direction = Vec3::new(victim.x - from.x, 0.0, victim.z - from.z);
+    let stop = victim - direction.normalize_or_zero() * gap;
+    Vec3::new(stop.x, from.y, stop.z)
 }
 
 /// @brief Drops pending animations when a new game starts; the pieces get respawned from scratch.
@@ -133,27 +202,48 @@ fn queue_moves(
             .rook_move
             .and_then(|(from, to)| Some((find(from)?, from, to)));
 
-        queue.steps.push_back(Step::Slide {
-            entity: mover,
-            from: square_to_world(mv.from) + Vec3::Y * mover_y,
-            to: square_to_world(mv.to) + Vec3::Y * mover_y,
-            jump: mv.piece.kind == PieceKind::Knight,
-        });
-        if let Some(((entity, y), square)) = victim {
+        let lift = Vec3::Y * mover_y;
+        let start = square_to_world(mv.from) + lift;
+        let end = square_to_world(mv.to) + lift;
+        let facing = Some(army_facing(mv.piece.color));
+        let jump = mv.piece.kind == PieceKind::Knight;
+
+        if let Some(((victim, victim_y), victim_square)) = victim {
+            let victim_at = square_to_world(victim_square) + Vec3::Y * victim_y;
+            let approach = approach_point(start, victim_at);
             // No longer on the board; the entity lives on only until its capture step ends.
-            commands.entity(entity).remove::<PieceOnBoard>();
-            queue.steps.push_back(Step::Capture {
-                entity,
-                from: square_to_world(square) + Vec3::Y * y,
-            });
+            commands.entity(victim).remove::<PieceOnBoard>();
+            queue.steps.extend([
+                walk(mover, start, approach, jump, None),
+                Step::Act {
+                    entity: mover,
+                    clip: Clip::Attack,
+                    seconds: ATTACK_SECONDS,
+                },
+                Step::Act {
+                    entity: victim,
+                    clip: Clip::Hit,
+                    seconds: HIT_SECONDS,
+                },
+                Step::Capture {
+                    entity: victim,
+                    from: victim_at,
+                },
+                walk(mover, approach, end, false, facing),
+            ]);
+        } else {
+            queue.steps.push_back(walk(mover, start, end, jump, facing));
         }
+
         if let Some(((entity, y), from, to)) = rook {
-            queue.steps.push_back(Step::Slide {
+            let lift = Vec3::Y * y;
+            queue.steps.push_back(walk(
                 entity,
-                from: square_to_world(from) + Vec3::Y * y,
-                to: square_to_world(to) + Vec3::Y * y,
-                jump: false,
-            });
+                square_to_world(from) + lift,
+                square_to_world(to) + lift,
+                false,
+                facing,
+            ));
             if let Ok((_, mut on_board, _)) = pieces.get_mut(entity) {
                 on_board.square = to;
             }
@@ -179,25 +269,24 @@ fn queue_moves(
     }
 }
 
-/// @brief Advances the front step; moves on to the next one when it finishes.
+/// @brief Advances the front step: starts its clip, moves it along, and settles it when done.
 fn play_animations(
     time: Res<Time>,
     mut queue: ResMut<AnimationQueue>,
     mut transforms: Query<&mut Transform>,
+    mut clips: ClipPlayer,
     mut spawner: PieceSpawner,
 ) {
     let Some(&step) = queue.steps.front() else {
         return;
     };
-    if queue.elapsed == 0.0 {
+    let starting = queue.elapsed == 0.0;
+    if starting {
         debug!(?step, "animation step started");
     }
     queue.elapsed += time.delta_secs();
-    let duration = match step {
-        Step::Slide { .. } => SLIDE_SECONDS,
-        Step::Capture { .. } => CAPTURE_SECONDS,
-        Step::Promote { .. } => 0.0,
-    };
+
+    let duration = step.duration(&clips);
     let t = if duration > 0.0 {
         (queue.elapsed / duration).min(1.0)
     } else {
@@ -207,12 +296,17 @@ fn play_animations(
     let eased = t * t * (3.0 - 2.0 * t);
 
     match step {
-        Step::Slide {
+        Step::Walk {
             entity,
             from,
             to,
             jump,
+            settle,
+            ..
         } => {
+            if starting {
+                clips.play(entity, Clip::Walk);
+            }
             if let Ok(mut transform) = transforms.get_mut(entity) {
                 let hop = if jump {
                     (PI * t).sin() * KNIGHT_JUMP_HEIGHT
@@ -220,12 +314,37 @@ fn play_animations(
                     0.0
                 };
                 transform.translation = from.lerp(to, eased) + Vec3::Y * hop;
+                let heading = Vec3::new(to.x - from.x, 0.0, to.z - from.z);
+                // Face the path while walking (models face +Z); turn back to the opponent when settling.
+                if t < 1.0 && heading.length_squared() > 0.0 {
+                    transform.rotation = Quat::from_rotation_y(heading.x.atan2(heading.z));
+                } else if t >= 1.0
+                    && let Some(facing) = settle
+                {
+                    transform.rotation = facing;
+                }
+            }
+            if t >= 1.0 {
+                clips.play(entity, Clip::Idle);
+            }
+        }
+        Step::Act { entity, clip, .. } => {
+            if starting {
+                clips.play(entity, clip);
+            }
+            if t >= 1.0 && clip != Clip::Hit {
+                clips.play(entity, Clip::Idle);
             }
         }
         Step::Capture { entity, from } => {
-            if let Ok(mut transform) = transforms.get_mut(entity) {
+            if starting && clips.play(entity, Clip::Die) {
+                debug!("die clip playing");
+            }
+            if !clips.has(entity, Clip::Die)
+                && let Ok(mut transform) = transforms.get_mut(entity)
+            {
                 transform.scale = Vec3::splat(1.0 - eased);
-                transform.translation = from - Vec3::Y * CAPTURE_SINK * eased;
+                transform.translation = from - Vec3::Y * SHRINK_SINK * eased;
             }
             if t >= 1.0 {
                 spawner.commands.entity(entity).despawn();
@@ -258,7 +377,8 @@ mod tests {
     use crate::test_support::{headless_app, play};
     use crate::turn::ActiveGame;
 
-    /// @brief Every piece entity shows the rules' piece, rests on its square, and nothing extra is left.
+    /// @brief Every piece entity shows the rules' piece, rests on its square facing the opponent,
+    ///        and nothing extra is left.
     fn assert_matches_rules(app: &mut App) {
         let game = app.world().resource::<ActiveGame>().0.clone();
         let mut query = app.world_mut().query::<(&PieceOnBoard, &Transform)>();
@@ -270,6 +390,12 @@ mod tests {
             assert!((transform.translation.x - ground.x).abs() < 1e-4);
             assert!((transform.translation.z - ground.z).abs() < 1e-4);
             assert_eq!(transform.scale, Vec3::ONE);
+            assert!(
+                transform
+                    .rotation
+                    .angle_between(army_facing(on_board.piece.color))
+                    < 1e-3
+            );
         }
     }
 
@@ -302,5 +428,12 @@ mod tests {
         let mut app = headless_app(game);
         play(&mut app, "a7a8q");
         assert_matches_rules(&mut app);
+    }
+
+    /// @brief An attacker stops short of its victim, on the line toward it, at its own height.
+    #[test]
+    fn attacker_stops_short() {
+        let stop = approach_point(Vec3::new(0.0, 0.2, 0.0), Vec3::new(2.0, 0.5, 0.0));
+        assert!((stop - Vec3::new(2.0 - ATTACK_GAP * SQUARE_SIZE, 0.2, 0.0)).length() < 1e-5);
     }
 }
