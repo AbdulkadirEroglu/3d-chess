@@ -9,10 +9,11 @@ Written in Rust with Bevy. Free release on GitHub and Steam.
 
 - **Releases are the backbone, features hang off them.** Each milestone has a fixed scope and exit criteria; new ideas go into the backlog, not the current milestone.
 - **Every input becomes a `MoveCommand`.** Mouse, touch, voice, AI and network all produce the same command; rules and animation never know the source.
-- **Rules are the truth, visuals are a view.** Game state lives in the rules layer (`shakmaty`); the 3D scene only presents it and can be skipped or sped up.
+- **Rules are the truth, visuals are a view.** Game state lives in the rules layer (`chess_core`, built on `cozy-chess`); the 3D scene only presents it and can be skipped or sped up.
 - **Themes are data.** Pieces, boards and scenery come from swappable theme packs, even before theme switching is exposed to players.
 - **Mobile-aware from day one.** Asset budgets and UI layout assume Android will come, even though it ships later.
 - **Pinned dependencies.** Bevy is pinned to an exact version and upgraded deliberately between milestones.
+- **License-clean.** Code is `MIT OR Apache-2.0`; no GPL-family dependencies (they conflict with Steamworks and the App Store). See `TECH_STACK.md`.
 
 ---
 
@@ -20,20 +21,23 @@ Written in Rust with Bevy. Free release on GitHub and Steam.
 
 ### v0.1 — Alpha (Linux, internal)
 
-Goal: the core loop works end to end with placeholder art.
+Goal: the core loop works end to end with placeholder art, playable solo against the AI.
 
 - [ ] Bevy project setup, pinned version, fast-compile config
 - [ ] 3D board, orbit camera, lighting
 - [ ] Placeholder pieces (simple shapes)
-- [ ] Full chess rules via `shakmaty`: legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
+- [ ] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
+- [ ] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
 - [ ] Mouse input: select piece, highlight legal moves, choose target
 - [ ] `MoveCommand` pipeline: input → rules validation → animation queue
 - [ ] Basic move animation (piece travels to target square)
 - [ ] Basic capture effect (defender breaks / disappears)
 - [ ] Local hot-seat 2-player
+- [ ] Simple AI opponent (`chess_ai`: alpha-beta), runs off the main thread
+- [ ] Game mode select: human vs human, human vs AI, pick side
 - [ ] Game-over screen, restart
 
-**Exit criteria:** a full game can be played start to finish on Linux with no rule bugs.
+**Exit criteria:** a full game can be played start to finish on Linux, vs a human or the AI, with no rule bugs (perft suite passing).
 
 ### v0.5 — Beta (Linux, public on GitHub)
 
@@ -45,7 +49,7 @@ Goal: it looks and feels like animated chess, playable by strangers.
   - [ ] Pre-fractured meshes / debris for captures
 - [ ] Animation state machine: walk → attack → defender dies → attacker settles → next turn
 - [ ] Piece-specific movement (knight jumps, rook slides, etc.)
-- [ ] Simple AI opponent (Rust, alpha-beta on `shakmaty`), a few difficulty levels
+- [ ] AI difficulty levels, stronger search (transposition table, move ordering)
 - [ ] Main menu, settings (graphics, audio, animation speed)
 - [ ] Sound effects and music
 - [ ] Undo / move history, save & load game (PGN)
@@ -63,7 +67,7 @@ Goal: polished, stable, the baseline feature set is complete.
 - [ ] Capture animations varied per attacker / defender pair (at least per attacker type)
 - [ ] Cinematic camera during captures (toggleable)
 - [ ] Polished UI, accessibility basics (rebindable keys, scalable UI, colorblind-safe highlights)
-- [ ] Stronger AI, optional Stockfish integration on desktop (mind GPL)
+- [ ] Stronger AI; optional Stockfish as a separate process over UCI on desktop (never linked, see `TECH_STACK.md`)
 - [ ] Packaging: AppImage and/or Flatpak
 
 **Exit criteria:** stable release on GitHub; we'd be happy for anyone to play it.
@@ -146,8 +150,8 @@ These are planned after the baseline, each slotted into a milestone once the bas
 
 | Milestone | Feature tracks |
 |---|---|
-| v0.1 Alpha | Baseline only |
-| v0.5 Beta | Baseline + stone theme + simple AI |
+| v0.1 Alpha | Baseline + simple AI |
+| v0.5 Beta | Baseline + stone theme + AI difficulty levels |
 | v1.0 Linux | Polish; voice control (desktop) if baseline is stable |
 | v1.x Steam | Scenery, theme switching, online multiplayer |
 | v2.x Android | Mobile voice backend, touch |
