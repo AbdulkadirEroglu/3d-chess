@@ -14,11 +14,13 @@ Status: `planned` = not written yet, `done` = exists. Keep the "Key items" colum
 ### `crates/chess_core`: rules and game state (no Bevy)
 | Module | Owns | Key items | Status |
 |---|---|---|---|
-| `lib.rs` | Crate root, re-exports | — | done |
-| `game` | Game state, applying moves, game result | `Game`, `Game::apply`, `GameResult` | planned |
-| `command` | Move requests from any input source | `MoveCommand`, `CommandSource`, `MoveError` | planned |
-| `notation` | SAN and PGN reading/writing | — | planned |
-| `draw` | 50-move, threefold repetition, insufficient material | — | planned |
+| `lib.rs` | Crate root, re-exports. `cozy-chess` stays private behind it | — | done |
+| `types` | Board vocabulary | `Square` (`new`, `from_index`, `file`, `rank`, parse/print `"e4"`), `Color` (`opponent`), `PieceKind`, `Piece` | done |
+| `command` | Move requests from any input source | `MoveCommand`, `CommandSource`, `MoveError` | done |
+| `game` | Position, legal moves, applying commands, result incl. all draw rules | `Game` (`new`, `from_fen`, `apply`, `legal_moves`, `piece_at`, `pieces`, `side_to_move`, `result`), `Move` (with `capture` and `rook_move` for animation), `GameResult` | done |
+| `notation` | SAN and PGN reading/writing (beta: save/load) | — | planned |
+
+Tests: `crates/chess_core/tests/rules.rs` covers perft (start, Kiwipete, en passant pins), special moves, rejections and every game result.
 
 ### `crates/chess_ai`: computer opponent (no Bevy)
 | Module | Owns | Key items | Status |
@@ -63,7 +65,7 @@ Use exactly these names in code, comments and docs. Don't invent synonyms.
 | Term | Meaning | Don't call it |
 |---|---|---|
 | `Square` | One of the 64 board locations (a1–h8) | tile, cell, field, position |
-| `File` / `Rank` | Board column (a–h) / row (1–8) | column, row, x/y |
+| File / Rank | Board column a–h / row 1–8; in code `Square::file()` / `Square::rank()`, both 0–7 | column, row, x/y |
 | `Color` | White or Black side | team, player, side |
 | `PieceKind` | Pawn, Knight, Bishop, Rook, Queen, King | piece type, role |
 | Piece (entity) | The 3D character in the Bevy world, with a `Piece` component | unit, figure, troop (in code) |

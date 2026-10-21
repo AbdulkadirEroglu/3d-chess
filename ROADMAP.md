@@ -27,7 +27,7 @@ Goal: the core loop works end to end with placeholder art, playable solo against
 - [ ] 3D board, orbit camera, lighting
 - [ ] Placeholder pieces (simple shapes)
 - [ ] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
-- [ ] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
+- [x] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
 - [ ] Mouse input: select piece, highlight legal moves, choose target
 - [ ] `MoveCommand` pipeline: input → rules validation → animation queue
 - [ ] Basic move animation (piece travels to target square)
