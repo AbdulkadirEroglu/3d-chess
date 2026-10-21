@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#15141a"/><stop offset="1" stop-color="#2a2630"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="0.73" cy="0.55" r="0.5">
+    <stop offset="0" stop-color="#d4a24c" stop-opacity="0.22"/><stop offset="1" stop-color="#d4a24c" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#15141a" stop-opacity="0.55"/><stop offset="0.45" stop-color="#15141a" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+<rect width="1280" height="360" rx="18" fill="url(#bg)"/>
+<rect width="1280" height="360" rx="18" fill="url(#glow)"/>
+<polygon points="757.0,64.0 1103.0,64.0 1244.0,326.0 616.0,326.0" fill="#3a3540"/>
+<polygon points="616.0,326.0 1244.0,326.0 1244.0,342.0 616.0,342.0" fill="#26222b"/>
+<polygon points="765.0,70.0 806.2,70.0 798.7,88.6 755.0,88.6" fill="#cfc6b4"/>
+<polygon points="806.2,70.0 847.5,70.0 842.5,88.6 798.7,88.6" fill="#5d5750"/>
+<polygon points="847.5,70.0 888.8,70.0 886.2,88.6 842.5,88.6" fill="#cfc6b4"/>
+<polygon points="888.8,70.0 930.0,70.0 930.0,88.6 886.2,88.6" fill="#5d5750"/>
+<polygon points="930.0,70.0 971.2,70.0 973.8,88.6 930.0,88.6" fill="#cfc6b4"/>
+<polygon points="971.2,70.0 1012.5,70.0 1017.5,88.6 973.8,88.6" fill="#5d5750"/>
+<polygon points="1012.5,70.0 1053.8,70.0 1061.3,88.6 1017.5,88.6" fill="#cfc6b4"/>
+<polygon points="1053.8,70.0 1095.0,70.0 1105.0,88.6 1061.3,88.6" fill="#5d5750"/>
+<polygon points="755.0,88.6 798.7,88.6 788.4,114.2 741.1,114.2" fill="#5d5750"/>
+<polygon points="798.7,88.6 842.5,88.6 835.6,114.2 788.4,114.2" fill="#cfc6b4"/>
+<polygon points="842.5,88.6 886.2,88.6 882.8,114.2 835.6,114.2" fill="#5d5750"/>
+<polygon points="886.2,88.6 930.0,88.6 930.0,114.2 882.8,114.2" fill="#cfc6b4"/>
+<polygon points="930.0,88.6 973.8,88.6 977.2,114.2 930.0,114.2" fill="#5d5750"/>
+<polygon points="973.8,88.6 1017.5,88.6 1024.4,114.2 977.2,114.2" fill="#cfc6b4"/>
+<polygon points="1017.5,88.6 1061.3,88.6 1071.6,114.2 1024.4,114.2" fill="#5d5750"/>
+<polygon points="1061.3,88.6 1105.0,88.6 1118.9,114.2 1071.6,114.2" fill="#cfc6b4"/>
+<polygon points="741.1,114.2 788.4,114.2 776.5,143.4 725.4,143.4" fill="#cfc6b4"/>
+<polygon points="788.4,114.2 835.6,114.2 827.7,143.4 776.5,143.4" fill="#5d5750"/>
+<polygon points="835.6,114.2 882.8,114.2 878.8,143.4 827.7,143.4" fill="#cfc6b4"/>
+<polygon points="882.8,114.2 930.0,114.2 930.0,143.4 878.8,143.4" fill="#5d5750"/>
+<polygon points="930.0,114.2 977.2,114.2 981.2,143.4 930.0,143.4" fill="#cfc6b4"/>
+<polygon points="977.2,114.2 1024.4,114.2 1032.3,143.4 981.2,143.4" fill="#5d5750"/>
+<polygon points="1024.4,114.2 1071.6,114.2 1083.5,143.4 1032.3,143.4" fill="#cfc6b4"/>
+<polygon points="1071.6,114.2 1118.9,114.2 1134.6,143.4 1083.5,143.4" fill="#5d5750"/>
+<polygon points="725.4,143.4 776.5,143.4 763.7,175.1 708.2,175.1" fill="#5d5750"/>
+<polygon points="776.5,143.4 827.7,143.4 819.1,175.1 763.7,175.1" fill="#cfc6b4"/>
+<polygon points="827.7,143.4 878.8,143.4 874.6,175.1 819.1,175.1" fill="#5d5750"/>
+<polygon points="878.8,143.4 930.0,143.4 930.0,175.1 874.6,175.1" fill="#cfc6b4"/>
+<polygon points="930.0,143.4 981.2,143.4 985.4,175.1 930.0,175.1" fill="#5d5750"/>
+<polygon points="981.2,143.4 1032.3,143.4 1040.9,175.1 985.4,175.1" fill="#cfc6b4"/>
+<polygon points="1032.3,143.4 1083.5,143.4 1096.3,175.1 1040.9,175.1" fill="#5d5750"/>
+<polygon points="1083.5,143.4 1134.6,143.4 1151.8,175.1 1096.3,175.1" fill="#cfc6b4"/>
+<polygon points="708.2,175.1 763.7,175.1 750.0,208.9 690.0,208.9" fill="#cfc6b4"/>
+<polygon points="763.7,175.1 819.1,175.1 810.0,208.9 750.0,208.9" fill="#5d5750"/>
+<polygon points="819.1,175.1 874.6,175.1 870.0,208.9 810.0,208.9" fill="#cfc6b4"/>
+<polygon points="874.6,175.1 930.0,175.1 930.0,208.9 870.0,208.9" fill="#5d5750"/>
+<polygon points="930.0,175.1 985.4,175.1 990.0,208.9 930.0,208.9" fill="#cfc6b4"/>
+<polygon points="985.4,175.1 1040.9,175.1 1050.0,208.9 990.0,208.9" fill="#5d5750"/>
+<polygon points="1040.9,175.1 1096.3,175.1 1110.0,208.9 1050.0,208.9" fill="#cfc6b4"/>
+<polygon points="1096.3,175.1 1151.8,175.1 1170.0,208.9 1110.0,208.9" fill="#5d5750"/>
+<polygon points="690.0,208.9 750.0,208.9 735.6,244.5 670.8,244.5" fill="#5d5750"/>
+<polygon points="750.0,208.9 810.0,208.9 800.4,244.5 735.6,244.5" fill="#cfc6b4"/>
+<polygon points="810.0,208.9 870.0,208.9 865.2,244.5 800.4,244.5" fill="#5d5750"/>
+<polygon points="870.0,208.9 930.0,208.9 930.0,244.5 865.2,244.5" fill="#cfc6b4"/>
+<polygon points="930.0,208.9 990.0,208.9 994.8,244.5 930.0,244.5" fill="#5d5750"/>
+<polygon points="990.0,208.9 1050.0,208.9 1059.6,244.5 994.8,244.5" fill="#cfc6b4"/>
+<polygon points="1050.0,208.9 1110.0,208.9 1124.4,244.5 1059.6,244.5" fill="#5d5750"/>
+<polygon points="1110.0,208.9 1170.0,208.9 1189.2,244.5 1124.4,244.5" fill="#cfc6b4"/>
+<polygon points="670.8,244.5 735.6,244.5 720.6,281.6 650.8,281.6" fill="#cfc6b4"/>
+<polygon points="735.6,244.5 800.4,244.5 790.4,281.6 720.6,281.6" fill="#5d5750"/>
+<polygon points="800.4,244.5 865.2,244.5 860.2,281.6 790.4,281.6" fill="#cfc6b4"/>
+<polygon points="865.2,244.5 930.0,244.5 930.0,281.6 860.2,281.6" fill="#5d5750"/>
+<polygon points="930.0,244.5 994.8,244.5 999.8,281.6 930.0,281.6" fill="#cfc6b4"/>
+<polygon points="994.8,244.5 1059.6,244.5 1069.6,281.6 999.8,281.6" fill="#5d5750"/>
+<polygon points="1059.6,244.5 1124.4,244.5 1139.4,281.6 1069.6,281.6" fill="#cfc6b4"/>
+<polygon points="1124.4,244.5 1189.2,244.5 1209.2,281.6 1139.4,281.6" fill="#5d5750"/>
+<polygon points="650.8,281.6 720.6,281.6 705.0,320.0 630.0,320.0" fill="#5d5750"/>
+<polygon points="720.6,281.6 790.4,281.6 780.0,320.0 705.0,320.0" fill="#cfc6b4"/>
+<polygon points="790.4,281.6 860.2,281.6 855.0,320.0 780.0,320.0" fill="#5d5750"/>
+<polygon points="860.2,281.6 930.0,281.6 930.0,320.0 855.0,320.0" fill="#cfc6b4"/>
+<polygon points="930.0,281.6 999.8,281.6 1005.0,320.0 930.0,320.0" fill="#5d5750"/>
+<polygon points="999.8,281.6 1069.6,281.6 1080.0,320.0 1005.0,320.0" fill="#cfc6b4"/>
+<polygon points="1069.6,281.6 1139.4,281.6 1155.0,320.0 1080.0,320.0" fill="#5d5750"/>
+<polygon points="1139.4,281.6 1209.2,281.6 1230.0,320.0 1155.0,320.0" fill="#cfc6b4"/>
+<polygon points="765.0,70.0 1095.0,70.0 1230.0,320.0 630.0,320.0" fill="url(#fade)"/>
+<ellipse cx="813.5" cy="109.6" rx="11.3" ry="3.2" fill="#000" opacity="0.35"/>
+<text x="813.5" y="109.6" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="35.4" text-anchor="middle" fill="#24212a" stroke="#d4a24c" stroke-width="1.2">♜</text>
+<ellipse cx="906.7" cy="109.6" rx="11.3" ry="3.2" fill="#000" opacity="0.35"/>
+<text x="906.7" y="109.6" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="35.4" text-anchor="middle" fill="#24212a" stroke="#d4a24c" stroke-width="1.2">♛</text>
+<ellipse cx="995.0" cy="85.2" rx="10.3" ry="2.9" fill="#000" opacity="0.35"/>
+<text x="995.0" y="85.2" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="32.1" text-anchor="middle" fill="#24212a" stroke="#d4a24c" stroke-width="1.2">♚</text>
+<ellipse cx="854.3" cy="138.1" rx="12.6" ry="3.5" fill="#000" opacity="0.35"/>
+<text x="854.3" y="138.1" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="39.3" text-anchor="middle" fill="#24212a" stroke="#d4a24c" stroke-width="1.2">♟</text>
+<ellipse cx="1005.7" cy="138.1" rx="12.6" ry="3.5" fill="#000" opacity="0.35"/>
+<text x="1005.7" y="138.1" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="39.3" text-anchor="middle" fill="#24212a" stroke="#d4a24c" stroke-width="1.2">♟</text>
+<ellipse cx="1046.5" cy="109.6" rx="11.3" ry="3.2" fill="#000" opacity="0.35"/>
+<text x="1046.5" y="109.6" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="35.4" text-anchor="middle" fill="#24212a" stroke="#d4a24c" stroke-width="1.2">♝</text>
+<ellipse cx="959.6" cy="202.8" rx="15.4" ry="4.3" fill="#000" opacity="0.35"/>
+<text x="959.6" y="202.8" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="48.1" text-anchor="middle" fill="#f3ead8" stroke="#2a2630" stroke-width="1.2">♞</text>
+<ellipse cx="898.0" cy="238.1" rx="16.9" ry="4.8" fill="#000" opacity="0.35"/>
+<text x="898.0" y="238.1" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="52.9" text-anchor="middle" fill="#f3ead8" stroke="#2a2630" stroke-width="1.2">♟</text>
+<ellipse cx="1025.9" cy="238.1" rx="16.9" ry="4.8" fill="#000" opacity="0.35"/>
+<text x="1025.9" y="238.1" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="52.9" text-anchor="middle" fill="#f3ead8" stroke="#2a2630" stroke-width="1.2">♟</text>
+<ellipse cx="744.8" cy="313.1" rx="20.2" ry="5.7" fill="#000" opacity="0.35"/>
+<text x="744.8" y="313.1" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="63.1" text-anchor="middle" fill="#f3ead8" stroke="#2a2630" stroke-width="1.2">♜</text>
+<ellipse cx="967.0" cy="313.1" rx="20.2" ry="5.7" fill="#000" opacity="0.35"/>
+<text x="967.0" y="313.1" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="63.1" text-anchor="middle" fill="#f3ead8" stroke="#2a2630" stroke-width="1.2">♚</text>
+<ellipse cx="1102.3" cy="274.9" rx="18.5" ry="5.2" fill="#000" opacity="0.35"/>
+<text x="1102.3" y="274.9" font-family="'Noto Sans Symbols 2','DejaVu Sans','Segoe UI Symbol',sans-serif" font-size="57.9" text-anchor="middle" fill="#f3ead8" stroke="#2a2630" stroke-width="1.2">♝</text>
+<circle cx="926.0" cy="150.9" r="5" fill="#f0c36a" opacity="0.85"/>
+<circle cx="990.0" cy="138.9" r="4" fill="#f0c36a" opacity="0.85"/>
+<circle cx="1002.0" cy="166.9" r="3" fill="#f0c36a" opacity="0.85"/>
+<circle cx="938.0" cy="126.9" r="3" fill="#f0c36a" opacity="0.85"/>
+<circle cx="968.0" cy="116.9" r="4" fill="#f0c36a" opacity="0.85"/>
+<text x="80" y="150" font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="76" font-weight="800" fill="#f3ead8" letter-spacing="2">3D CHESS</text>
+<rect x="82" y="172" width="120" height="5" rx="2.5" fill="#d4a24c"/>
+<text x="80" y="220" font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="26" fill="#cfc6b4">Every piece is a soldier.</text>
+<text x="80" y="256" font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="26" fill="#cfc6b4">Every capture is a fight.</text>
+<text x="80" y="306" font-family="'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" fill="#8f8799" letter-spacing="3">RUST  ·  BEVY  ·  FREE &amp; OPEN SOURCE</text>
+</svg>
