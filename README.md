@@ -7,7 +7,8 @@
 ![Status](https://img.shields.io/badge/status-pre--alpha-d4a24c?style=for-the-badge)
 ![Rust](https://img.shields.io/badge/rust-1.98-ce422b?style=for-the-badge&logo=rust&logoColor=white)
 ![Bevy](https://img.shields.io/badge/bevy-0.20-232326?style=for-the-badge&logo=bevy&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-3a7bd5?style=for-the-badge)
+[![CI](https://img.shields.io/github/actions/workflow/status/AbdulkadirEroglu/3d-chess/ci.yml?branch=master&style=for-the-badge&label=CI&logo=githubactions&logoColor=white)](https://github.com/AbdulkadirEroglu/3d-chess/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-3a7bd5?style=for-the-badge)](#-license)
 
 ![Linux](https://img.shields.io/badge/Linux-first-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![Steam](https://img.shields.io/badge/Steam-planned-1b2838?style=flat-square&logo=steam&logoColor=white)
@@ -118,7 +119,7 @@ flowchart LR
 ## 🚀 Quick start
 
 ```sh
-git clone <repo-url> 3d_chess && cd 3d_chess
+git clone https://github.com/AbdulkadirEroglu/3d-chess.git && cd 3d-chess
 cargo run -p game
 ```
 
@@ -144,6 +145,7 @@ The Rust toolchain is pinned in `rust-toolchain.toml`; `rustup` installs the rig
 
 | Task | Command |
 |---|---|
+| **Run all CI checks locally** | `./scripts/ci.sh` |
 | Run (fast rebuilds) | `cargo run -p game --features bevy/dynamic_linking` |
 | Verbose logs | `RUST_LOG=game=debug,chess_ai=trace cargo run -p game` |
 | Test | `cargo test --workspace` |
@@ -187,7 +189,7 @@ flowchart LR
 <br>
 
 ```
-3d_chess/
+3d-chess/
 ├── crates/
 │   ├── chess_core/   ♟️  rules & game state (plain Rust, no engine)
 │   ├── chess_ai/     🤖 computer opponent
@@ -233,9 +235,24 @@ Working with Claude Code? Use **`/feature <task>`** to build and **`/audit`** to
 
 ---
 
-<div align="center">
+## 📜 License
 
-**Free and open source.** Code licensed under **MIT** or **Apache-2.0**, at your option.
+Free and open source. The code is dual-licensed under either of
+
+| | |
+|---|---|
+| [MIT License](LICENSE-MIT) | short and simple |
+| [Apache License 2.0](LICENSE-APACHE) | adds an explicit patent grant |
+
+at your option. This is the same as Bevy and most of the Rust ecosystem.
+
+Unless you explicitly state otherwise, any contribution you intentionally submit for inclusion in this project shall be dual-licensed as above, without any additional terms or conditions.
+
+<sub>Game assets (models, textures, audio) may carry their own licenses, listed in <code>assets/CREDITS.md</code> once assets arrive.</sub>
+
+---
+
+<div align="center">
 
 <sub>Built with 🦀 Rust and 🕊️ Bevy</sub>
 

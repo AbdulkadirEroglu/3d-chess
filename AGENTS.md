@@ -37,6 +37,7 @@ Before working, read:
 ## Commands
 
 ```sh
+./scripts/ci.sh                      # every CI check, exactly as CI runs them
 cargo build                          # dev build
 cargo run -p game                    # run the game
 cargo run -p game --features dev     # with debug tooling
@@ -49,7 +50,9 @@ npx --yes jscpd@4 crates --format rust --min-lines 8 --gitignore   # copy-paste 
 cargo run -p game --features bevy/dynamic_linking                  # faster dev rebuilds (never for release)
 ```
 
-One-time setup per clone: `git config core.hooksPath .githooks` (runs fmt, clippy, tests and deny before each commit).
+One-time setup per clone: `git config core.hooksPath .githooks` (runs `scripts/ci.sh` before each commit).
+
+The list of checks lives only in `scripts/ci.sh`. To add or change a check, edit that script; CI and the pre-commit hook pick it up.
 
 Before saying a task is done, run `cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace`. All three must pass. If you can't run something, say so explicitly. Don't claim it passed.
 

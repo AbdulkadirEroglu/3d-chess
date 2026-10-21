@@ -1,12 +1,23 @@
-# CI: format, lints, tests, licenses, unused deps and copy-paste detection on every push and PR.
+# CI: runs scripts/ci.sh (format, lints, tests, licenses, unused deps, copy-paste) on every push and PR.
+# The check list lives in scripts/ci.sh only, so CI, the pre-commit hook and local runs stay identical.
 name: CI
 
+# Pushes to master and all PRs; doc-only changes are skipped.
 on:
   push:
+    branches: [master]
+    paths-ignore: ["**.md", "docs/**", "LICENSE-*"]
   pull_request:
+    paths-ignore: ["**.md", "docs/**", "LICENSE-*"]
+
+# A newer push to the same branch cancels the older, still-running run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
 
 jobs:
   check:
@@ -25,20 +36,7 @@ jobs:
         with:
           tool: cargo-deny,cargo-machete
 
-      - name: Format
-        run: cargo fmt --all --check
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Tests
-        run: cargo test --workspace
-
-      - name: Licenses and advisories
-        run: cargo deny check
-
-      - name: Unused dependencies
-        run: cargo machete
-
-      - name: Copy-paste detection
-        run: npx --yes jscpd@4 crates --format rust --min-lines 8 --threshold 3 --gitignore
+      - name: Checks
+        run: ./scripts/ci.sh
+        env:
+          TEST_PROFILE: ci

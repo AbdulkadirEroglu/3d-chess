@@ -146,7 +146,8 @@ Player-facing UI uses **Bevy UI**. `bevy_egui` is for debug and dev tooling only
 | `cargo-machete` | Unused dependencies |
 | `jscpd` | Copy-paste detection in CI (fails above 3% duplication) |
 | Workspace lints | Root `Cargo.toml` `[workspace.lints]`: docs on all items, no `println!`/`dbg!`/`unwrap()`/`todo!()`, function size limits (`clippy.toml`), lint silencing needs a reason |
-| Pre-commit hook | `.githooks/pre-commit`: fmt, clippy, test, deny. Enable with `git config core.hooksPath .githooks` |
+| `scripts/ci.sh` | The single list of checks; run by CI, the pre-commit hook and locally. CI uses the unoptimized `ci` profile for speed |
+| Pre-commit hook | `.githooks/pre-commit` runs `scripts/ci.sh`. Enable with `git config core.hooksPath .githooks` |
 | Claude Code config | `.claude/settings.json`: agents can't commit/push; rustfmt after edits; clippy check when an agent finishes. Skills `/feature` and `/audit` in `.claude/skills/` |
 
 Rule: `chess_core` and `chess_ai` carry the bulk of the tests. The `game` crate gets tests for turn flow and command handling using a headless Bevy `App` (no window).

@@ -48,6 +48,16 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 3
 
+# CI only checks correctness: no optimization or debug info, so Bevy builds much faster.
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = false
+incremental = false
+
+[profile.ci.package."*"]
+opt-level = 0
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
