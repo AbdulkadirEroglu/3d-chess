@@ -3,6 +3,8 @@
 
 mod board;
 mod camera;
+mod pieces;
+mod turn;
 
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
@@ -37,7 +39,12 @@ fn main() {
                     ..default()
                 }),
         )
-        .add_plugins((board::BoardPlugin, camera::CameraPlugin))
+        .add_plugins((
+            turn::TurnPlugin,
+            board::BoardPlugin,
+            camera::CameraPlugin,
+            pieces::PiecesPlugin,
+        ))
         .add_systems(Startup, log_startup)
         .run();
 }
