@@ -23,6 +23,8 @@ confidence-threshold = 0.9
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Our own crates depend on each other by path; they're never published, so that's fine.
+allow-wildcard-paths = true
 
 [advisories]
 yanked = "deny"

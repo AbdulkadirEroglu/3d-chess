@@ -23,8 +23,8 @@ Written in Rust with Bevy. Free release on GitHub and Steam.
 
 Goal: the core loop works end to end with placeholder art, playable solo against the AI.
 
-- [ ] Bevy project setup, pinned version, fast-compile config
-- [ ] 3D board, orbit camera, lighting
+- [x] Bevy project setup, pinned version, fast-compile config
+- [x] 3D board, orbit camera, lighting
 - [ ] Placeholder pieces (simple shapes)
 - [ ] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
 - [x] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules

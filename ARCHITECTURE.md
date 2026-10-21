@@ -33,14 +33,14 @@ Tests: `crates/chess_core/tests/rules.rs` covers perft (start, Kiwipete, en pass
 | Module | Owns | Key items | Status |
 |---|---|---|---|
 | `main.rs` | App setup, logging setup, plugin registration | — | done |
-| `board` | Board mesh, square ↔ world position, highlights | — | planned |
+| `board` | Board tiles and base slab, scene lighting, square → world position (highlights come in step 4) | `BoardPlugin`, `square_to_world`, `SQUARE_SIZE` | done |
 | `pieces` | Piece entities, spawning from the theme | — | planned |
 | `input` | Mouse/keyboard/touch → `MoveCommand` | — | planned |
 | `turn` | Turn flow, sends commands to `chess_core` | — | planned |
 | `animation` | Animation queue for moves and captures | — | planned |
 | `ai` | Runs `chess_ai` on a background task | — | planned |
 | `theme` | Theme pack loading; the only place asset paths live | — | planned |
-| `camera` | Camera rig and controls | — | planned |
+| `camera` | Orbit camera: right-drag rotates, scroll zooms; background color | `CameraPlugin` | done |
 | `audio` | Sound effects and music | — | planned |
 | `ui` | Menus, HUD, game-over screen | — | planned |
 
@@ -51,7 +51,7 @@ Tests: `crates/chess_core/tests/rules.rs` covers perft (start, Kiwipete, en pass
 | If you need… | Put it in / use |
 |---|---|
 | Anything about chess rules or legality | `chess_core`, never `game` |
-| A conversion between a `Square` and a 3D position | `game::board` (one function, reuse it) |
+| A conversion between a `Square` and a 3D position | `game::board::square_to_world` (reuse it, never recompute) |
 | A new way for players to give moves | A new producer of `MoveCommand` in `game::input` (or its own crate later) |
 | An asset path | The theme manifest, loaded by `game::theme` |
 | A tunable number (speeds, sizes, colors) | A `const` at the top of the module that uses it; move it to settings only when players need to change it |

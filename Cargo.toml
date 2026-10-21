@@ -12,6 +12,7 @@ publish = false
 # Every dependency is declared here and referenced with `workspace = true`.
 # Only crates approved in TECH_STACK.md.
 [workspace.dependencies]
+chess_core = { path = "crates/chess_core" }
 bevy = "0.20"
 cozy-chess = "0.3"
 thiserror = "2"

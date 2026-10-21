@@ -9,6 +9,7 @@ publish.workspace = true
 
 [dependencies]
 bevy.workspace = true
+chess_core.workspace = true
 
 [lints]
 workspace = true

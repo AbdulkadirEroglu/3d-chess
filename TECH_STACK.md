@@ -53,7 +53,7 @@ A Cargo workspace. The rules and AI crates **do not depend on Bevy**. That keeps
 │   ├── chess_core/         # rules, game state, MoveCommand, SAN/PGN, draw rules. No Bevy.
 │   ├── chess_ai/           # search engine. Depends on chess_core only. No Bevy.
 │   └── game/               # Bevy app (binary). All presentation lives here.
-│       └── src/
+│       └── src/            # modules start as single files (board.rs) and become folders only when they grow
 │           ├── main.rs
 │           ├── board/      # board mesh, squares, highlights
 │           ├── pieces/     # piece entities, spawning from theme
@@ -104,7 +104,6 @@ Planned later crates: `voice` (the `SpeechRecognizer` trait and its backends) an
 | Engine | `bevy` | `0.20` | MIT/Apache |
 | Chess rules | `cozy-chess` | `0.3` | MIT |
 | Picking (click on squares and pieces) | Bevy built-in `bevy_picking` / `MeshPickingPlugin` | — | — |
-| Input mapping (mouse, keys, later gamepad and touch) | `leafwing-input-manager` | `0.22` | MIT/Apache |
 | Errors (library crates) | `thiserror` | `2` | MIT/Apache |
 | Errors (binaries and tools only) | `anyhow` | `1` | MIT/Apache |
 | Logging (`game`) | Bevy's `tracing` integration (`bevy::log`) | — | — |
@@ -119,6 +118,7 @@ Player-facing UI uses **Bevy UI**. `bevy_egui` is for debug and dev tooling only
 |---|---|---|---|
 | Audio (music crossfade, SFX control) | `bevy_kira_audio` | `0.27` | Replaces Bevy's built-in audio |
 | Physics (capture debris) | `avian3d` | `0.8` | Visual only; never affects game state |
+| Input mapping (rebindable keys, gamepad) | `leafwing-input-manager` | `0.22` | v1.0 (rebinding) / Steam (gamepad). Until then Bevy's built-in `ButtonInput` is enough |
 | Particles (dust, sparks) | `bevy_hanabi` | — | Currently on Bevy 0.19; adopt once it supports 0.20 |
 
 ### Later milestones (decided when we get there)
