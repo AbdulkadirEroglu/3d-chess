@@ -1,0 +1,22 @@
+// Stone theme manifest. See ART_GUIDE.md (this folder) and docs/ASSET_SPEC.md.
+// Uncomment a line once its .glb is exported and passes `python3 scripts/check_asset.py`.
+// Commented-out pieces use the placeholder shapes, so the theme works at every stage.
+(
+    name: "Stone",
+    white: (
+        // pawn: Some("white/pawn.glb"),
+        // knight: Some("white/knight.glb"),
+        // bishop: Some("white/bishop.glb"),
+        // rook: Some("white/rook.glb"),
+        // queen: Some("white/queen.glb"),
+        // king: Some("white/king.glb"),
+    ),
+    black: (
+        // pawn: Some("black/pawn.glb"),
+        // knight: Some("black/knight.glb"),
+        // bishop: Some("black/bishop.glb"),
+        // rook: Some("black/rook.glb"),
+        // queen: Some("black/queen.glb"),
+        // king: Some("black/king.glb"),
+    ),
+)
