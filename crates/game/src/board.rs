@@ -1,9 +1,12 @@
 //! @file board.rs
-//! @brief The 3D board: stone tiles on a base slab, plus the scene lighting.
+//! @brief The 3D board: stone tiles on a base slab, scene lighting, and selection highlights.
 //!        Owns the conversion from a `Square` to a world position.
 
+use bevy::picking::Pickable;
 use bevy::prelude::*;
 use chess_core::Square;
+
+use crate::input::Selection;
 
 /// @brief Width of one square in world units.
 pub const SQUARE_SIZE: f32 = 1.0;
@@ -32,13 +35,44 @@ const SUN_ILLUMINANCE: f32 = 9_000.0;
 /// @brief Soft fill light so shadows aren't pitch black.
 const AMBIENT_BRIGHTNESS: f32 = 250.0;
 
-/// @brief Spawns the board and lights at startup.
+/// @brief Highlight color: translucent gold.
+const HIGHLIGHT_COLOR: Color = Color::srgba(0.83, 0.64, 0.30, 0.7);
+
+/// @brief Height of highlight markers above the tiles, so they never flicker into them.
+const HIGHLIGHT_LIFT: f32 = 0.01;
+
+/// @brief Spawns the board and lights at startup, and redraws highlights when the selection changes.
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (spawn_board, spawn_lights));
+        app.add_systems(Startup, (spawn_board, spawn_lights, init_highlight_assets))
+            .add_systems(
+                Update,
+                show_highlights.run_if(resource_changed::<Selection>),
+            );
     }
+}
+
+/// @brief Marks a tile entity with the square it represents. Clicks on it select that square.
+#[derive(Component, Debug)]
+pub struct BoardSquare(pub Square);
+
+/// @brief Marks a highlight marker, so the old ones can be removed.
+#[derive(Component)]
+struct Highlight;
+
+/// @brief Meshes and material for highlights, made once at startup.
+#[derive(Resource)]
+struct HighlightAssets {
+    /// @brief Flat plate on the selected square.
+    selected: Handle<Mesh>,
+    /// @brief Small dot on an empty target square.
+    target: Handle<Mesh>,
+    /// @brief Ring around a piece that can be captured.
+    capture: Handle<Mesh>,
+    /// @brief Shared translucent material.
+    material: Handle<StandardMaterial>,
 }
 
 /// @brief World position of the center of a square's top surface.
@@ -75,6 +109,7 @@ fn spawn_board(
         };
         commands.spawn((
             Name::new(format!("Square {square}")),
+            BoardSquare(square),
             Mesh3d(tile.clone()),
             MeshMaterial3d(material),
             Transform::from_translation(square_to_world(square) - Vec3::Y * TILE_HEIGHT / 2.0),
@@ -105,4 +140,70 @@ fn spawn_lights(mut commands: Commands, mut ambient: ResMut<GlobalAmbientLight>)
         Transform::from_xyz(5.0, 10.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
     debug!("lights spawned");
+}
+
+/// @brief Creates the highlight meshes and material.
+fn init_highlight_assets(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.insert_resource(HighlightAssets {
+        selected: meshes.add(Cuboid::new(SQUARE_SIZE * 0.95, 0.01, SQUARE_SIZE * 0.95)),
+        target: meshes.add(Cylinder::new(SQUARE_SIZE * 0.16, 0.01)),
+        capture: meshes.add(Torus::new(SQUARE_SIZE * 0.36, SQUARE_SIZE * 0.46)),
+        material: materials.add(StandardMaterial {
+            base_color: HIGHLIGHT_COLOR,
+            alpha_mode: AlphaMode::Blend,
+            unlit: true,
+            ..default()
+        }),
+    });
+}
+
+/// @brief Replaces the highlight markers: one on the selected square, one per legal target.
+fn show_highlights(
+    mut commands: Commands,
+    selection: Res<Selection>,
+    assets: Res<HighlightAssets>,
+    old: Query<Entity, With<Highlight>>,
+) {
+    for entity in &old {
+        commands.entity(entity).despawn();
+    }
+    let Some(selected) = selection.square else {
+        return;
+    };
+
+    // Promotions list four moves to the same square; mark each target once.
+    let mut targets: Vec<_> = selection
+        .moves
+        .iter()
+        .map(|mv| (mv.to, mv.capture.is_some()))
+        .collect();
+    targets.sort_by_key(|(square, _)| square.index());
+    targets.dedup();
+
+    let markers = std::iter::once((selected, &assets.selected)).chain(targets.into_iter().map(
+        |(square, capture)| {
+            (
+                square,
+                if capture {
+                    &assets.capture
+                } else {
+                    &assets.target
+                },
+            )
+        },
+    ));
+    for (square, mesh) in markers {
+        commands.spawn((
+            Highlight,
+            Mesh3d(mesh.clone()),
+            MeshMaterial3d(assets.material.clone()),
+            Transform::from_translation(square_to_world(square) + Vec3::Y * HIGHLIGHT_LIFT),
+            // Markers must not catch clicks meant for the square or piece below.
+            Pickable::IGNORE,
+        ));
+    }
 }

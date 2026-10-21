@@ -28,7 +28,7 @@ Goal: the core loop works end to end with placeholder art, playable solo against
 - [x] Placeholder pieces (simple shapes)
 - [ ] Cargo workspace per `TECH_STACK.md`, CI (fmt, clippy, tests, cargo-deny)
 - [x] Full chess rules via `chess_core` (`cozy-chess`): legal moves, check, checkmate, stalemate, castling, en passant, promotion, draw rules
-- [ ] Mouse input: select piece, highlight legal moves, choose target
+- [x] Mouse input: select piece, highlight legal moves, choose target (promotions auto-queen in alpha)
 - [ ] `MoveCommand` pipeline: input → rules validation → animation queue
 - [ ] Basic move animation (piece travels to target square)
 - [ ] Basic capture effect (defender breaks / disappears)
@@ -50,6 +50,7 @@ Goal: it looks and feels like animated chess, playable by strangers.
 - [ ] Animation state machine: walk → attack → defender dies → attacker settles → next turn
 - [ ] Piece-specific movement (knight jumps, rook slides, etc.)
 - [ ] AI difficulty levels, stronger search (transposition table, move ordering)
+- [ ] Promotion choice UI (alpha always promotes to a queen)
 - [ ] Main menu, settings (graphics, audio, animation speed)
 - [ ] Sound effects and music
 - [ ] Undo / move history, save & load game (PGN)

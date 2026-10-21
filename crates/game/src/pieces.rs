@@ -29,7 +29,7 @@ impl Plugin for PiecesPlugin {
 #[derive(Component, Debug)]
 #[cfg_attr(
     not(test),
-    expect(dead_code, reason = "read by input and turn flow, alpha steps 4-5")
+    expect(dead_code, reason = "`piece` is read by the turn flow, alpha step 5")
 )]
 pub struct PieceOnBoard {
     /// @brief Kind and color.

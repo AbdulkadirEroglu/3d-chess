@@ -3,6 +3,7 @@
 
 mod board;
 mod camera;
+mod input;
 mod pieces;
 mod turn;
 
@@ -44,6 +45,7 @@ fn main() {
             board::BoardPlugin,
             camera::CameraPlugin,
             pieces::PiecesPlugin,
+            input::InputPlugin,
         ))
         .add_systems(Startup, log_startup)
         .run();

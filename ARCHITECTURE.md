@@ -33,10 +33,10 @@ Tests: `crates/chess_core/tests/rules.rs` covers perft (start, Kiwipete, en pass
 | Module | Owns | Key items | Status |
 |---|---|---|---|
 | `main.rs` | App setup, logging setup, plugin registration | — | done |
-| `board` | Board tiles and base slab, scene lighting, square → world position (highlights come in step 4) | `BoardPlugin`, `square_to_world`, `SQUARE_SIZE` | done |
+| `board` | Board tiles and base slab, scene lighting, square → world position, selection highlights | `BoardPlugin`, `BoardSquare`, `square_to_world`, `SQUARE_SIZE` | done |
 | `pieces` | Piece entities spawned from `ActiveGame`; alpha placeholder shapes (theme models in beta) | `PiecesPlugin`, `PieceOnBoard` | done |
-| `input` | Mouse/keyboard/touch → `MoveCommand` | — | planned |
-| `turn` | Owns the active game; turn flow (commands → `chess_core`) comes in step 5 | `TurnPlugin`, `ActiveGame` | partial |
+| `input` | Mouse picking: select a piece, click a target → `MoveCommandSent` (alpha: promotions become a queen) | `InputPlugin`, `Selection` | done |
+| `turn` | Owns the active game and the move command channel; turn flow (applying commands) comes in step 5 | `TurnPlugin`, `ActiveGame`, `MoveCommandSent` | partial |
 | `animation` | Animation queue for moves and captures | — | planned |
 | `ai` | Runs `chess_ai` on a background task | — | planned |
 | `theme` | Theme pack loading; the only place asset paths live | — | planned |
@@ -69,6 +69,8 @@ Use exactly these names in code, comments and docs. Don't invent synonyms.
 | `Color` | White or Black side | team, player, side |
 | `PieceKind` | Pawn, Knight, Bishop, Rook, Queen, King | piece type, role |
 | Piece (entity) | The 3D character in the Bevy world, with a `PieceOnBoard` component (its `Piece` and `Square`) | unit, figure, troop (in code) |
+| `Selection` | The selected square plus its legal moves (`input::Selection`) | picked, chosen, active piece |
+| `MoveCommandSent` | Bevy message carrying a `MoveCommand` from any input source to the turn flow | move event, move request |
 | `ActiveGame` | Bevy resource holding the `Game` being played; the only source of truth in the `game` crate | game state, board state |
 | `Move` | A legal move as `chess_core` represents it | action, turn |
 | `MoveCommand` | A *request* to make a move, from any input source; may be rejected | move request, order, input move |
